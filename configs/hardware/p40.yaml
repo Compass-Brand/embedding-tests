@@ -1,0 +1,9 @@
+device_name: Tesla P40
+compute_capability: [6, 1]
+total_vram_gb: 24.0
+supports_bf16: false
+supports_flash_attn2: false
+fp16_compute_ratio: 0.015625  # 1:64 vs FP32
+recommended_strategy: fp16_storage_fp32_compute
+default_attn_implementation: eager
+safety_margin_gb: 2.0
