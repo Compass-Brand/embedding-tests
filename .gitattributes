@@ -1,0 +1,93 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Shell scripts - always LF (Unix)
+*.sh text eol=lf
+*.bash text eol=lf
+
+# PowerShell scripts - CRLF for Windows native, but allow LF
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
+
+# JavaScript/TypeScript - always LF
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+
+# Python - always LF
+*.py text eol=lf
+*.pyi text eol=lf
+
+# Configuration files - always LF
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+
+# Markdown and documentation - always LF
+*.md text eol=lf
+*.txt text eol=lf
+*.rst text eol=lf
+
+# Web files - always LF
+*.html text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.less text eol=lf
+*.svg text eol=lf
+
+# Docker files - always LF
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+docker-compose*.yaml text eol=lf
+
+# Git files - always LF
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.gitmodules text eol=lf
+
+# Make/Just files - always LF
+Makefile text eol=lf
+justfile text eol=lf
+
+# SQL files - always LF
+*.sql text eol=lf diff=sql
+
+# Binary files - do not normalize
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.7z binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.otf binary
+*.webp binary
+
+# Model files - binary
+*.bin binary
+*.onnx binary
+*.safetensors binary
+
+# Lock files - treat as generated (no diff)
+package-lock.json text eol=lf -diff
+yarn.lock text eol=lf -diff
+pnpm-lock.yaml text eol=lf -diff
+poetry.lock text eol=lf -diff
+Cargo.lock text eol=lf -diff
+composer.lock text eol=lf -diff
+Gemfile.lock text eol=lf -diff
