@@ -1,0 +1,11 @@
+name: qwen3-vl-embedding-8b
+model_id: Qwen/Qwen3-VL-Embedding-8B
+model_type: multimodal_embedding
+params_billions: 8.0
+embedding_dim: 4096
+supported_precisions:
+  - fp16
+  - int8
+trust_remote_code: true
+query_instruction: null
+max_seq_length: 32768

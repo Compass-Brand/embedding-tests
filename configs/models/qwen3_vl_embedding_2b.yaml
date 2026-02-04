@@ -1,0 +1,10 @@
+name: qwen3-vl-embedding-2b
+model_id: Qwen/Qwen3-VL-Embedding-2B
+model_type: multimodal_embedding
+params_billions: 2.0
+embedding_dim: 2048
+supported_precisions:
+  - fp16
+trust_remote_code: true
+query_instruction: null
+max_seq_length: 32768

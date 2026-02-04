@@ -1,0 +1,8 @@
+name: qwen3-vl-reranker-2b
+model_id: Qwen/Qwen3-VL-Reranker-2B
+model_type: multimodal_reranker
+params_billions: 2.0
+embedding_dim: 0
+supported_precisions:
+  - fp16
+trust_remote_code: true

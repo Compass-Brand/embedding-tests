@@ -1,0 +1,11 @@
+name: qwen3-embedding-0.6b
+model_id: Qwen/Qwen3-Embedding-0.6B
+model_type: text_embedding
+params_billions: 0.6
+embedding_dim: 1024
+supported_precisions:
+  - fp16
+trust_remote_code: true
+query_instruction: null
+max_seq_length: 32768
+padding_side: left

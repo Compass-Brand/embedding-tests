@@ -1,0 +1,13 @@
+name: llama-embed-nemotron-8b
+model_id: nvidia/llama-embed-nemotron-8b
+model_type: text_embedding
+params_billions: 7.5
+embedding_dim: 4096
+supported_precisions:
+  - fp16
+  - int8
+  - int4
+trust_remote_code: true
+query_instruction: null
+max_seq_length: 8192
+padding_side: left

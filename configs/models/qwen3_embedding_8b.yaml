@@ -1,0 +1,13 @@
+name: qwen3-embedding-8b
+model_id: Qwen/Qwen3-Embedding-8B
+model_type: text_embedding
+params_billions: 8.0
+embedding_dim: 4096
+supported_precisions:
+  - fp16
+  - int8
+  - int4
+trust_remote_code: true
+query_instruction: null
+max_seq_length: 32768
+padding_side: left
