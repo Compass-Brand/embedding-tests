@@ -101,7 +101,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Validate JSON/YAML
-        uses: GrantBirki/json-yaml-validate@v3
+        uses: GrantBirki/json-yaml-validate@v4
         continue-on-error: true
 
       - name: Lint GitHub Actions workflows
