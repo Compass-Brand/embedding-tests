@@ -1,0 +1,32 @@
+[
+  {
+    "query_id": "q_001",
+    "text": "How do vector databases work for semantic search?",
+    "relevant_doc_ids": ["doc_001", "doc_010"],
+    "category": "retrieval_basics"
+  },
+  {
+    "query_id": "q_002",
+    "text": "What is the reranking technique in information retrieval?",
+    "relevant_doc_ids": ["doc_004", "doc_010"],
+    "category": "reranking"
+  },
+  {
+    "query_id": "q_003",
+    "text": "How to reduce GPU memory usage for large models?",
+    "relevant_doc_ids": ["doc_005", "doc_007"],
+    "category": "hardware"
+  },
+  {
+    "query_id": "q_004",
+    "text": "What metrics should I use to evaluate retrieval quality?",
+    "relevant_doc_ids": ["doc_006", "doc_009"],
+    "category": "evaluation"
+  },
+  {
+    "query_id": "q_005",
+    "text": "Can embedding models handle both images and text?",
+    "relevant_doc_ids": ["doc_008", "doc_002"],
+    "category": "multimodal"
+  }
+]

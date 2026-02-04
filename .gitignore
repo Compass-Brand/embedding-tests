@@ -38,3 +38,9 @@ htmlcov/
 *.bin
 *.onnx
 *.safetensors
+
+# Experiment results and data
+results/
+data/
+checkpoints/
+.cache/

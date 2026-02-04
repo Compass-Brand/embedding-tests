@@ -1,0 +1,52 @@
+[
+  {
+    "doc_id": "doc_001",
+    "title": "Introduction to Vector Databases",
+    "text": "Vector databases are specialized storage systems designed to efficiently store and query high-dimensional vector embeddings. They enable similarity search at scale, making them essential for modern RAG (Retrieval-Augmented Generation) pipelines. Popular options include ChromaDB, Pinecone, Weaviate, and Milvus."
+  },
+  {
+    "doc_id": "doc_002",
+    "title": "Embedding Models Overview",
+    "text": "Embedding models transform text into dense vector representations that capture semantic meaning. Modern embedding models like E5, GTE, and BGE achieve state-of-the-art performance on retrieval benchmarks. The choice of embedding model significantly impacts RAG pipeline quality."
+  },
+  {
+    "doc_id": "doc_003",
+    "title": "Text Chunking Strategies",
+    "text": "Effective text chunking is critical for RAG systems. Common strategies include fixed-size chunking, recursive character splitting, and sentence-based chunking. Chunk size and overlap parameters must be tuned based on the embedding model's context window and the downstream retrieval task."
+  },
+  {
+    "doc_id": "doc_004",
+    "title": "Reranking for Improved Retrieval",
+    "text": "Reranking is a two-stage retrieval technique where an initial retrieval returns candidate documents, and a cross-encoder reranker scores each query-document pair for relevance. This approach combines the efficiency of bi-encoder retrieval with the accuracy of cross-encoder scoring."
+  },
+  {
+    "doc_id": "doc_005",
+    "title": "GPU Memory Management",
+    "text": "Managing GPU memory is crucial when working with large language models. Techniques include quantization (INT8, INT4), gradient checkpointing, and mixed-precision training. The Tesla P40 with 24GB VRAM requires careful memory planning for models exceeding 8B parameters."
+  },
+  {
+    "doc_id": "doc_006",
+    "title": "MTEB Benchmark Suite",
+    "text": "The Massive Text Embedding Benchmark (MTEB) evaluates embedding models across diverse tasks including retrieval, classification, clustering, and semantic textual similarity. MTEB provides standardized comparisons across hundreds of models and dozens of datasets."
+  },
+  {
+    "doc_id": "doc_007",
+    "title": "Quantization Techniques",
+    "text": "Model quantization reduces memory usage by representing weights with fewer bits. Common approaches include INT8 quantization via bitsandbytes, INT4 with GPTQ or AWQ, and mixed-precision where different layers use different precisions. Quantization typically trades a small accuracy loss for significant memory savings."
+  },
+  {
+    "doc_id": "doc_008",
+    "title": "Multimodal Embeddings",
+    "text": "Multimodal embedding models like Qwen3-VL-Embedding can encode both text and images into a shared vector space. This enables cross-modal retrieval where text queries can find relevant images and vice versa. These models extend RAG pipelines beyond pure text."
+  },
+  {
+    "doc_id": "doc_009",
+    "title": "Evaluation Metrics for Retrieval",
+    "text": "Key retrieval metrics include Recall@k (fraction of relevant documents in top-k results), Mean Reciprocal Rank (average reciprocal of the rank of the first relevant result), and NDCG (Normalized Discounted Cumulative Gain, which considers both relevance and position)."
+  },
+  {
+    "doc_id": "doc_010",
+    "title": "RAG Pipeline Architecture",
+    "text": "A typical RAG pipeline consists of: document ingestion and chunking, embedding generation, vector indexing, query embedding, similarity search retrieval, optional reranking, and context-augmented generation. Each stage offers optimization opportunities for improving end-to-end quality."
+  }
+]

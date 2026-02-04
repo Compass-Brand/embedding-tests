@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "embedding-tests"
+version = "0.1.0"
+description = "RAG-focused embedding and reranker testing framework"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+
+dependencies = [
+    # Core ML
+    "torch>=2.0.0",
+    "transformers>=4.57.0",
+    "sentence-transformers>=3.0.0",
+    "accelerate>=0.30.0",
+    "safetensors>=0.4.0",
+    # Quantization
+    "bitsandbytes>=0.43.0",
+    # VL models
+    "qwen-vl-utils>=0.0.8",
+    "Pillow>=10.0.0",
+    # RAG pipeline
+    "chromadb>=0.5.0",
+    "langchain-text-splitters>=0.2.0",
+    # Evaluation
+    "mteb>=1.12.0",
+    "ragas>=0.2.0",
+    "datasets>=2.19.0",
+    # Data
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+    "scipy>=1.13.0",
+    # Config/CLI
+    "pydantic>=2.7.0",
+    "pyyaml>=6.0.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+vllm = [
+    "vllm>=0.4.0",
+]
+
+[project.scripts]
+emb-test = "embedding_tests.runner.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/embedding_tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "gpu: requires GPU hardware (deselect with '-m not gpu')",
+    "slow: slow running tests (deselect with '-m not slow')",
+    "integration: integration tests requiring external resources",
+    "vl: requires VL model dependencies",
+]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.coverage.run]
+source = ["src/embedding_tests"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
