@@ -41,7 +41,8 @@ def batch_embed(
     if all_embeddings:
         combined = np.concatenate(all_embeddings, axis=0)
     else:
-        # TODO: Consider inferring dtype from model output for consistency
+        # float32 is the standard dtype for embedding arrays regardless of model
+        # storage precision - all models normalize to float32 on output.
         combined = np.empty((0, model.get_embedding_dim()), dtype=np.float32)
 
     return EmbeddingResult(

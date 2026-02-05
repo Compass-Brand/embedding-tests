@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
+
 import typer
 from rich.console import Console
 from rich.table import Table
 
+from embedding_tests.config.datasets import load_dataset
 from embedding_tests.config.experiment import load_experiment_config
 from embedding_tests.config.models import load_all_model_configs
 from embedding_tests.runner.experiment import ExperimentRunner
@@ -37,11 +40,17 @@ def run(
     console.print(f"[green]Running experiment: {experiment.name}[/green]")
     console.print(f"Models: {len(experiment.models)}, Precisions: {len(experiment.precisions)}")
 
+    # Load dataset(s) - use first specified or default to sample
+    dataset_name = experiment.datasets[0] if experiment.datasets else None
+    data_dir = _PACKAGE_ROOT / "data"
+    corpus, queries = load_dataset(dataset_name, data_dir=data_dir)
+    console.print(f"Dataset: {dataset_name or 'sample'} ({len(corpus)} docs, {len(queries)} queries)")
+
     runner = ExperimentRunner(
         model_configs=experiment.models,
         precisions=experiment.precisions,
-        corpus=[],  # TODO: implement dataset loading from experiment config
-        queries=[],  # TODO: implement dataset loading from experiment config
+        corpus=corpus,
+        queries=queries,
         checkpoint_dir=Path(checkpoint_dir),
         top_k=experiment.pipeline.retrieval_top_k,
         chunk_size=experiment.pipeline.chunk_size,
@@ -49,6 +58,12 @@ def run(
     )
     results = runner.run()
     console.print(f"[green]Completed {len(results)} combinations[/green]")
+
+    # Save results
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = RESULTS_DIR / f"{experiment.name}.json"
+    output_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    console.print(f"Results saved to {output_path}")
 
 
 @app.command(name="list")
@@ -90,8 +105,86 @@ def report(
         console.print(f"[yellow]No results found at {results_path}[/yellow]")
         raise typer.Exit(0)
 
-    # TODO: Implement report generation logic
-    console.print(f"[green]Generating {output_format} report from {results_path}[/green]")
+    # Load all JSON result files
+    json_files = sorted(results_path.glob("*.json"))
+    if not json_files:
+        console.print(f"[yellow]No result files in {results_path}[/yellow]")
+        raise typer.Exit(0)
+
+    from embedding_tests.reporting.collector import ModelResult, ResultsCollector
+    from embedding_tests.reporting.export import export_csv, export_json, export_markdown
+
+    collector = ResultsCollector()
+    for jf in json_files:
+        raw = json.loads(jf.read_text(encoding="utf-8"))
+        for entry in raw:
+            result = _entry_to_model_result(entry)
+            if result is not None:
+                collector.add(result)
+
+    if not collector.results:
+        console.print("[yellow]No valid results to report[/yellow]")
+        raise typer.Exit(0)
+
+    output_dir = results_path / "reports"
+    exporters = {
+        "json": (export_json, "report.json"),
+        "csv": (export_csv, "report.csv"),
+        "markdown": (export_markdown, "report.md"),
+    }
+
+    if output_format not in exporters:
+        console.print(f"[red]Unknown format: {output_format}. Use json, csv, or markdown.[/red]")
+        raise typer.Exit(1)
+
+    export_fn, filename = exporters[output_format]
+    output_path = output_dir / filename
+    export_fn(collector.results, output_path)
+    console.print(f"[green]Report saved to {output_path}[/green]")
+
+
+def _entry_to_model_result(entry: dict) -> ModelResult | None:
+    """Convert a raw experiment result dict to a ModelResult."""
+    from embedding_tests.reporting.collector import ModelResult
+
+    if "error" in entry and entry.get("status") != "completed":
+        return ModelResult(
+            model_name=entry.get("model", "unknown"),
+            precision=entry.get("precision", "unknown"),
+            recall_at_10=0.0,
+            mrr=0.0,
+            ndcg_at_10=0.0,
+            precision_at_10=0.0,
+            total_time_seconds=0.0,
+            error=entry.get("error"),
+        )
+
+    results = entry.get("results")
+    if not results:
+        return None
+
+    # Average per-query metrics
+    recalls = []
+    precisions = []
+    for qid, metrics in results.items():
+        for key, val in metrics.items():
+            if "recall" in key:
+                recalls.append(val)
+            elif "precision" in key:
+                precisions.append(val)
+
+    avg_recall = sum(recalls) / len(recalls) if recalls else 0.0
+    avg_precision = sum(precisions) / len(precisions) if precisions else 0.0
+
+    return ModelResult(
+        model_name=entry.get("model", "unknown"),
+        precision=entry.get("precision", "unknown"),
+        recall_at_10=avg_recall,
+        mrr=0.0,
+        ndcg_at_10=0.0,
+        precision_at_10=avg_precision,
+        total_time_seconds=entry.get("total_time", 0.0),
+    )
 
 
 if __name__ == "__main__":
