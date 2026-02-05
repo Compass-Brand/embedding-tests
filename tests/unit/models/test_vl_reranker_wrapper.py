@@ -35,109 +35,122 @@ def fp16_precision() -> PrecisionConfig:
     )
 
 
+def _mock_lm(hidden_dim: int = 16, vocab_size: int = 100) -> MagicMock:
+    """Create a mock Qwen3VLForConditionalGeneration with required internals."""
+    mock_lm = MagicMock()
+    mock_inner = MagicMock()
+    mock_lm.model = mock_inner
+    mock_inner.eval.return_value = None
+    mock_inner.dtype = torch.float16
+
+    cpu_param = torch.zeros(1, device="cpu")
+    mock_inner.parameters = lambda: iter([cpu_param])
+
+    # Real tensor so score_linear creation works
+    mock_lm.lm_head.weight.data = torch.randn(vocab_size, hidden_dim)
+    return mock_lm
+
+
+def _mock_tokenizer() -> MagicMock:
+    """Create a mock AutoTokenizer with vocab."""
+    mock_tok = MagicMock()
+    mock_tok.get_vocab.return_value = {"yes": 1, "no": 0}
+    return mock_tok
+
+
 class TestVLRerankerWrapper:
     """Tests for VLRerankerWrapper."""
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
-    @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
     def test_vl_reranker_init_uses_fp16(
         self,
-        mock_auto_model: MagicMock,
-        mock_tokenizer: MagicMock,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
+        mock_gen_cls.from_pretrained.return_value = _mock_lm()
+        mock_tok_cls.from_pretrained.return_value = _mock_tokenizer()
+
         VLRerankerWrapper(reranker_config, fp16_precision)
-        call_kwargs = mock_auto_model.from_pretrained.call_args.kwargs
+        call_kwargs = mock_gen_cls.from_pretrained.call_args.kwargs
         assert call_kwargs.get("torch_dtype") == torch.float16
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
-    @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
     def test_vl_reranker_rerank_returns_sorted_index_score_tuples(
         self,
-        mock_auto_model: MagicMock,
-        mock_tokenizer: MagicMock,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
-        mock_model = MagicMock()
-        # Ensure hf_device_map falls through to parameters()-based detection
-        mock_model.hf_device_map = None
-        # Mock parameters() for device detection via next(model.parameters()).device
-        cpu_param = torch.zeros(1, device="cpu")
-        mock_model.parameters.return_value = iter([cpu_param])
-        # Batch call returns logits for all query-doc pairs at once
-        mock_output = MagicMock()
-        mock_output.logits = torch.tensor([[0.9], [0.3], [0.7]])
-        mock_model.return_value = mock_output
-        mock_auto_model.from_pretrained.return_value = mock_model
-
-        mock_tok = MagicMock()
-        mock_tok.return_value = {
-            "input_ids": torch.tensor([[1], [1], [1]]),
-            "attention_mask": torch.tensor([[1], [1], [1]]),
-        }
-        mock_tokenizer.from_pretrained.return_value = mock_tok
+        mock_gen_cls.from_pretrained.return_value = _mock_lm()
+        mock_tok_cls.from_pretrained.return_value = _mock_tokenizer()
 
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
-        results = wrapper.rerank("query", ["doc1", "doc2", "doc3"])
+
+        # Mock _score_single to return controlled per-document scores
+        with patch.object(wrapper, "_score_single", side_effect=[0.9, 0.3, 0.7]):
+            results = wrapper.rerank("query", ["doc1", "doc2", "doc3"])
+
         assert all(isinstance(r, tuple) and len(r) == 2 for r in results)
-        # Scores should be sorted descending
+        # Scores sorted descending
         scores = [r[1] for r in results]
         assert scores == sorted(scores, reverse=True)
-        # Original scores: doc0=0.9, doc1=0.3, doc2=0.7
-        # Expected order: doc0 (0.9), doc2 (0.7), doc1 (0.3)
+        # Original: doc0=0.9, doc1=0.3, doc2=0.7 → sorted order: 0, 2, 1
         indices = [r[0] for r in results]
         assert indices == [0, 2, 1]
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
-    @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
     def test_vl_reranker_rerank_respects_top_k(
         self,
-        mock_auto_model: MagicMock,
-        mock_tokenizer: MagicMock,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
-        mock_model = MagicMock()
-        # Ensure hf_device_map falls through to parameters()-based detection
-        mock_model.hf_device_map = None
-        # Mock parameters() for device detection via next(model.parameters()).device
-        cpu_param = torch.zeros(1, device="cpu")
-        mock_model.parameters.return_value = iter([cpu_param])
-        # Batch call returns logits for all query-doc pairs at once
-        mock_output = MagicMock()
-        mock_output.logits = torch.tensor([[0.9], [0.3], [0.7], [0.5], [0.1]])
-        mock_model.return_value = mock_output
-        mock_auto_model.from_pretrained.return_value = mock_model
-
-        mock_tok = MagicMock()
-        mock_tok.return_value = {
-            "input_ids": torch.tensor([[1], [1], [1], [1], [1]]),
-            "attention_mask": torch.tensor([[1], [1], [1], [1], [1]]),
-        }
-        mock_tokenizer.from_pretrained.return_value = mock_tok
+        mock_gen_cls.from_pretrained.return_value = _mock_lm()
+        mock_tok_cls.from_pretrained.return_value = _mock_tokenizer()
 
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
-        results = wrapper.rerank("query", ["a", "b", "c", "d", "e"], top_k=2)
+
+        with patch.object(
+            wrapper, "_score_single", side_effect=[0.9, 0.3, 0.7, 0.5, 0.1]
+        ):
+            results = wrapper.rerank("query", ["a", "b", "c", "d", "e"], top_k=2)
+
         assert len(results) == 2
         scores = [r[1] for r in results]
-        assert scores[0] >= scores[1]  # Still sorted
+        assert scores[0] >= scores[1]
 
     @patch("embedding_tests.models.vl_reranker_wrapper.torch.cuda.empty_cache")
-    @patch("embedding_tests.models.vl_reranker_wrapper.torch.cuda.is_available", return_value=True)
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.torch.cuda.is_available",
+        return_value=True,
+    )
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
-    @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
     def test_vl_reranker_unload_clears_memory(
         self,
-        mock_auto_model: MagicMock,
-        mock_tokenizer: MagicMock,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
         mock_is_available: MagicMock,
         mock_empty_cache: MagicMock,
         reranker_config: ModelConfig,
@@ -145,38 +158,87 @@ class TestVLRerankerWrapper:
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
+        mock_gen_cls.from_pretrained.return_value = _mock_lm()
+        mock_tok_cls.from_pretrained.return_value = _mock_tokenizer()
+
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         wrapper.unload()
         mock_empty_cache.assert_called_once()
+        assert wrapper._model is None
+        assert wrapper._score_linear is None
+        assert wrapper._tokenizer is None
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
-    @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
     def test_vl_reranker_satisfies_reranker_protocol(
         self,
-        mock_auto_model: MagicMock,
-        mock_tokenizer: MagicMock,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
+
+        mock_gen_cls.from_pretrained.return_value = _mock_lm()
+        mock_tok_cls.from_pretrained.return_value = _mock_tokenizer()
 
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         assert isinstance(wrapper, RerankerModel)
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
-    @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
     def test_vl_reranker_rerank_handles_empty_documents(
         self,
-        mock_auto_model: MagicMock,
-        mock_tokenizer: MagicMock,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
-        mock_model = mock_auto_model.from_pretrained.return_value
+        mock_gen_cls.from_pretrained.return_value = _mock_lm()
+        mock_tok_cls.from_pretrained.return_value = _mock_tokenizer()
+
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         results = wrapper.rerank("query", [])
         assert results == []
-        # Verify short-circuit: model should not be called with empty documents
-        mock_model.assert_not_called()
+
+    @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
+    def test_vl_reranker_rerank_rejects_non_positive_top_k(
+        self,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
+        reranker_config: ModelConfig,
+        fp16_precision: PrecisionConfig,
+    ) -> None:
+        from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
+
+        mock_gen_cls.from_pretrained.return_value = _mock_lm()
+        mock_tok_cls.from_pretrained.return_value = _mock_tokenizer()
+
+        wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
+        with pytest.raises(ValueError, match="top_k must be positive"):
+            wrapper.rerank("query", ["doc1"], top_k=0)
+
+    def test_build_messages_format(self) -> None:
+        from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
+
+        messages = VLRerankerWrapper._build_messages(
+            "test instruction", "test query", "test document"
+        )
+        assert len(messages) == 2
+        assert messages[0]["role"] == "system"
+        assert messages[1]["role"] == "user"
+
+        user_content = messages[1]["content"]
+        assert any("<Instruct>:" in item["text"] for item in user_content)
+        assert any("<Query>:" in item["text"] for item in user_content)
+        assert any("test query" == item["text"] for item in user_content)
+        assert any("test document" == item["text"] for item in user_content)
