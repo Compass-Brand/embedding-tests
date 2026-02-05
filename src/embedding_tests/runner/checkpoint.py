@@ -13,7 +13,8 @@ def get_checkpoint_path(
     precision: str,
 ) -> Path:
     """Get the checkpoint file path for a model/precision combination."""
-    safe_name = model_name.replace("/", "_").replace(" ", "_")
+    import re
+    safe_name = re.sub(r'[^A-Za-z0-9._-]', '_', model_name)
     return checkpoint_dir / f"{safe_name}_{precision}.json"
 
 
@@ -46,7 +47,10 @@ def load_checkpoint(
     path = get_checkpoint_path(checkpoint_dir, model_name, precision)
     if not path.exists():
         return None
-    return json.loads(path.read_text())
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return None
 
 
 def is_completed(

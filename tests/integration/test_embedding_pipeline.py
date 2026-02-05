@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import torch
 
-from embedding_tests.config.hardware import detect_gpu
+from embedding_tests.config.hardware import GpuCapabilities
 from embedding_tests.config.models import PrecisionLevel, load_model_config
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
@@ -24,11 +24,8 @@ pytestmark = [pytest.mark.gpu, pytest.mark.slow]
 class TestEmbeddingPipeline:
     """End-to-end embedding pipeline tests."""
 
-    def test_end_to_end_embed_and_retrieve(self, configs_dir, sample_corpus, sample_queries) -> None:
+    def test_end_to_end_embed_and_retrieve(self, gpu: GpuCapabilities, configs_dir, sample_corpus, sample_queries) -> None:
         """Chunk, embed, index, and retrieve with real model."""
-        gpu = detect_gpu()
-        if gpu is None:
-            pytest.skip("No CUDA GPU")
 
         config = load_model_config(configs_dir / "models" / "qwen3_embedding_06b.yaml")
         precision = get_precision_config(gpu, PrecisionLevel.FP16)
@@ -67,11 +64,11 @@ class TestEmbeddingPipeline:
                 results = store.query(q_embed.embeddings[0], top_k=5)
                 assert len(results) > 0
                 # Check if any relevant doc appears in results
-                retrieved_docs = {r.doc_id.split("_")[0] + "_" + r.doc_id.split("_")[1] for r in results}
+                retrieved_docs = {r.doc_id.rsplit("_chunk_", 1)[0] for r in results}
                 relevant = set(q["relevant_doc_ids"])
                 recall = len(retrieved_docs & relevant) / len(relevant) if relevant else 0
                 # At least some recall expected with small corpus
-                assert recall >= 0  # Non-negative (may be 0 with very small corpus)
+                assert recall >= 0.0  # Non-negative (may be 0 with very small corpus)
 
         finally:
             model.unload()

@@ -25,7 +25,14 @@ def rerank_results(
     *,
     top_k: int = 10,
 ) -> list[RerankResult]:
-    """Rerank retrieved documents using a cross-encoder reranker."""
+    """Rerank retrieved documents using a cross-encoder reranker.
+
+    Args:
+        documents: List of dicts, each must contain "doc_id" and "text" keys.
+    """
+    for i, doc in enumerate(documents):
+        if "text" not in doc or "doc_id" not in doc:
+            raise ValueError(f"Document at index {i} missing required 'text' or 'doc_id' key")
     doc_texts = [d["text"] for d in documents]
     ranked = reranker.rerank(query, doc_texts, top_k=top_k)
 

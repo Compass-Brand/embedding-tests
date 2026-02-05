@@ -7,11 +7,16 @@ from typing import Any
 from embedding_tests.reporting.collector import ModelResult
 
 
+_VALID_METRICS = {"recall_at_10", "mrr", "ndcg_at_10", "precision_at_10", "time_seconds"}
+
+
 def cross_model_comparison(
     results: list[ModelResult],
     metric: str = "recall_at_10",
 ) -> list[dict[str, Any]]:
     """Create a cross-model comparison table ranked by a metric."""
+    if metric not in _VALID_METRICS:
+        raise ValueError(f"Unknown metric: {metric!r}. Valid: {sorted(_VALID_METRICS)}")
     rows = []
     for r in results:
         row = {
@@ -25,7 +30,7 @@ def cross_model_comparison(
         }
         rows.append(row)
 
-    rows.sort(key=lambda x: x.get(metric, 0), reverse=True)
+    rows.sort(key=lambda x: x[metric], reverse=True)
     return rows
 
 
@@ -42,6 +47,7 @@ def precision_impact_table(
             "recall_at_10": r.recall_at_10,
             "mrr": r.mrr,
             "ndcg_at_10": r.ndcg_at_10,
+            "precision_at_10": r.precision_at_10,
             "time_seconds": r.total_time_seconds,
         })
     return rows

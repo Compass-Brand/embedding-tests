@@ -28,6 +28,12 @@ def detect_gpu(device_index: int = 0) -> GpuCapabilities | None:
     if not torch.cuda.is_available():
         return None
 
+    device_count = torch.cuda.device_count()
+    if device_index >= device_count:
+        raise ValueError(
+            f"device_index {device_index} out of range; only {device_count} GPU(s) available"
+        )
+
     device_name = torch.cuda.get_device_name(device_index)
     cc = torch.cuda.get_device_capability(device_index)
     props = torch.cuda.get_device_properties(device_index)

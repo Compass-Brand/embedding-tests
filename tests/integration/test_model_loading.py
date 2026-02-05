@@ -10,22 +10,12 @@ import numpy as np
 import pytest
 import torch
 
-from embedding_tests.config.hardware import detect_gpu
 from embedding_tests.config.models import ModelType, PrecisionLevel, load_model_config
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 
 
 pytestmark = [pytest.mark.gpu, pytest.mark.slow]
-
-
-@pytest.fixture(scope="module")
-def gpu():
-    """Detect GPU capabilities."""
-    caps = detect_gpu()
-    if caps is None:
-        pytest.skip("No CUDA GPU available")
-    return caps
 
 
 class TestModelLoading:

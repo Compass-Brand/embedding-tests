@@ -1,5 +1,5 @@
 name: rag-chunking
-description: Compare chunking strategies with Qwen3-Embedding-0.6B
+description: Evaluate RAG with chunk_size 256 using Qwen3-Embedding-0.6B
 models:
   - qwen3-embedding-0.6b
 precisions:

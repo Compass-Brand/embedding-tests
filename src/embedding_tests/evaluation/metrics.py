@@ -74,6 +74,6 @@ def ndcg_at_k(
     ideal_rels = sorted(relevance.values(), reverse=True)[:k]
     idcg = sum(rel / math.log2(i + 2) for i, rel in enumerate(ideal_rels))
 
-    if idcg == 0:
+    if idcg == 0.0:
         return 0.0
     return dcg / idcg

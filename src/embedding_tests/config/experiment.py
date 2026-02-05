@@ -45,7 +45,7 @@ def load_experiment_config(
     models_dir: Path,
 ) -> ExperimentConfig:
     """Load an experiment config from YAML, resolving model references."""
-    with open(experiment_path) as f:
+    with open(experiment_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     # Load all available model configs
@@ -74,6 +74,9 @@ def load_experiment_config(
     # Parse pipeline config
     pipeline_data = data.get("pipeline", {})
     pipeline = PipelineConfig(**pipeline_data) if pipeline_data else PipelineConfig()
+
+    if "name" not in data:
+        raise ValueError("Experiment config must have a 'name' field")
 
     return ExperimentConfig(
         name=data["name"],

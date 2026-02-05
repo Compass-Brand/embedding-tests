@@ -9,7 +9,7 @@ from typing import Any
 
 from embedding_tests.config.hardware import detect_gpu
 from embedding_tests.config.models import ModelConfig, PrecisionLevel
-from embedding_tests.evaluation.metrics import recall_at_k, mrr, precision_at_k
+from embedding_tests.evaluation.metrics import recall_at_k, precision_at_k
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 from embedding_tests.pipeline.rag import RagPipeline
@@ -88,12 +88,12 @@ class ExperimentRunner:
             rag_result = pipeline.run(self._corpus, self._queries)
 
             # Compute metrics
-            metrics: dict[str, float] = {}
+            metrics: dict[str, Any] = {}
             for qr in rag_result.query_results:
                 relevant = set(qr.relevant_doc_ids)
                 r10 = recall_at_k(qr.retrieved_doc_ids, relevant, k=10)
                 p10 = precision_at_k(qr.retrieved_doc_ids, relevant, k=10)
-                metrics[qr.query_id] = r10
+                metrics[qr.query_id] = {"recall_at_10": r10, "precision_at_10": p10}
 
             result = {
                 "model": name,
@@ -104,14 +104,13 @@ class ExperimentRunner:
             }
 
             save_checkpoint(self._checkpoint_dir, name, prec, "completed", metrics)
-
-            # Cleanup
-            model.unload()
-            gc.collect()
-
             return result
 
         except Exception as e:
             logger.error("Failed %s/%s: %s", name, prec, e)
-            error_result = {"model": name, "precision": prec, "error": str(e)}
-            return error_result
+            return {"model": name, "precision": prec, "error": str(e)}
+
+        finally:
+            if "model" in locals():
+                model.unload()
+            gc.collect()

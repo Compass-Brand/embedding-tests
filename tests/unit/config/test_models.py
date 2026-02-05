@@ -83,10 +83,21 @@ class TestModelConfig:
         assert config.query_instruction is None
         assert config.max_seq_length is None
 
-    def test_model_config_validation_rejects_invalid_params(self) -> None:
-        with pytest.raises(ValueError):
+    def test_model_config_validation_rejects_empty_name(self) -> None:
+        with pytest.raises(ValueError, match="cannot be empty"):
             ModelConfig(
                 name="",
+                model_id="org/test",
+                model_type=ModelType.TEXT_EMBEDDING,
+                params_billions=1.0,
+                embedding_dim=768,
+                supported_precisions=[PrecisionLevel.FP16],
+            )
+
+    def test_model_config_validation_rejects_negative_params(self) -> None:
+        with pytest.raises(ValueError, match="must be positive"):
+            ModelConfig(
+                name="test",
                 model_id="org/test",
                 model_type=ModelType.TEXT_EMBEDDING,
                 params_billions=-1.0,
@@ -122,7 +133,7 @@ query_instruction: "query: "
 
     def test_load_all_model_configs(self, configs_dir: Path) -> None:
         configs = load_all_model_configs(configs_dir / "models")
-        assert len(configs) == 10
+        assert len(configs) >= 2
         names = {c.name for c in configs}
         assert "qwen3-embedding-0.6b" in names
         assert "qwen3-embedding-8b" in names

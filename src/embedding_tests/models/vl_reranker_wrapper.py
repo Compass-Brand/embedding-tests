@@ -21,7 +21,9 @@ class VLRerankerWrapper:
         self._config = config
         self._precision = precision
 
-        dtype = getattr(torch, precision.storage_dtype, torch.float16)
+        if not hasattr(torch, precision.storage_dtype):
+            raise ValueError(f"Invalid storage dtype: {precision.storage_dtype}")
+        dtype = getattr(torch, precision.storage_dtype)
 
         load_kwargs: dict[str, object] = {
             "torch_dtype": dtype,
@@ -29,15 +31,14 @@ class VLRerankerWrapper:
             "trust_remote_code": config.trust_remote_code,
         }
 
+        load_kwargs["device_map"] = "auto"
+
         if precision.quantization_config is not None:
             from transformers import BitsAndBytesConfig
 
             load_kwargs["quantization_config"] = BitsAndBytesConfig(
                 **precision.quantization_config
             )
-            load_kwargs["device_map"] = "auto"
-        else:
-            load_kwargs["device_map"] = "auto"
 
         self._model = AutoModelForSequenceClassification.from_pretrained(
             config.model_id, **load_kwargs
@@ -84,4 +85,5 @@ class VLRerankerWrapper:
         del self._model
         del self._tokenizer
         gc.collect()
-        torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()

@@ -58,4 +58,4 @@ class TestExportMarkdown:
         export_markdown(sample_results, output)
         content = output.read_text()
         assert "|" in content  # Markdown table uses pipes
-        assert "model_name" in content or "Model" in content
+        assert "model_name" in content

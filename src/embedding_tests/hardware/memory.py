@@ -20,7 +20,12 @@ def estimate_vram_gb(params_billions: float, precision: PrecisionLevel) -> float
     Uses a simple formula: params * bytes_per_param.
     Does not account for activation memory or KV cache overhead.
     """
-    bytes_per_param = _BYTES_PER_PARAM[precision]
+    bytes_per_param = _BYTES_PER_PARAM.get(precision)
+    if bytes_per_param is None:
+        raise ValueError(
+            f"Unsupported precision level: {precision}. "
+            f"Supported: {list(_BYTES_PER_PARAM.keys())}"
+        )
     return params_billions * bytes_per_param
 
 

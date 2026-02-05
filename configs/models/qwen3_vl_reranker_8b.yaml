@@ -1,7 +1,7 @@
 name: qwen3-vl-reranker-8b
 model_id: Qwen/Qwen3-VL-Reranker-8B
 model_type: multimodal_reranker
-params_billions: 9.0
+params_billions: 8.0
 embedding_dim: 0
 supported_precisions:
   - fp16

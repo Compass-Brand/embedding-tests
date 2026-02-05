@@ -31,15 +31,14 @@ class VLEmbeddingWrapper:
             "trust_remote_code": config.trust_remote_code,
         }
 
+        load_kwargs["device_map"] = "auto"
+
         if precision.quantization_config is not None:
             from transformers import BitsAndBytesConfig
 
             load_kwargs["quantization_config"] = BitsAndBytesConfig(
                 **precision.quantization_config
             )
-            load_kwargs["device_map"] = "auto"
-        else:
-            load_kwargs["device_map"] = "auto"
 
         self._model = AutoModel.from_pretrained(config.model_id, **load_kwargs)
         self._tokenizer = AutoTokenizer.from_pretrained(
@@ -72,7 +71,7 @@ class VLEmbeddingWrapper:
             # Use last hidden state, mean pooling over sequence
             hidden = outputs.last_hidden_state
             mask = inputs["attention_mask"].unsqueeze(-1).float()
-            pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1)
+            pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
 
             # Normalize
             pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
@@ -89,4 +88,5 @@ class VLEmbeddingWrapper:
         del self._model
         del self._tokenizer
         gc.collect()
-        torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()

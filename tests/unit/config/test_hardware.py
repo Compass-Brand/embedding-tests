@@ -33,6 +33,7 @@ class TestDetectGpu:
     @patch("embedding_tests.config.hardware.torch")
     def test_gpu_capabilities_detection_with_cuda(self, mock_torch: MagicMock) -> None:
         mock_torch.cuda.is_available.return_value = True
+        mock_torch.cuda.device_count.return_value = 1
         mock_torch.cuda.get_device_name.return_value = "Tesla P40"
         mock_torch.cuda.get_device_capability.return_value = (6, 1)
         mock_props = MagicMock()
@@ -52,8 +53,9 @@ class TestDetectGpu:
         assert caps is None
 
     @patch("embedding_tests.config.hardware.torch")
-    def test_p40_does_not_support_bf16(self, mock_torch: MagicMock) -> None:
+    def test_p40_does_not_support_bf16_or_flash_attn2(self, mock_torch: MagicMock) -> None:
         mock_torch.cuda.is_available.return_value = True
+        mock_torch.cuda.device_count.return_value = 1
         mock_torch.cuda.get_device_name.return_value = "Tesla P40"
         mock_torch.cuda.get_device_capability.return_value = (6, 1)
         mock_props = MagicMock()
@@ -63,23 +65,12 @@ class TestDetectGpu:
         caps = detect_gpu()
         assert caps is not None
         assert caps.supports_bf16 is False
-
-    @patch("embedding_tests.config.hardware.torch")
-    def test_p40_does_not_support_flash_attn2(self, mock_torch: MagicMock) -> None:
-        mock_torch.cuda.is_available.return_value = True
-        mock_torch.cuda.get_device_name.return_value = "Tesla P40"
-        mock_torch.cuda.get_device_capability.return_value = (6, 1)
-        mock_props = MagicMock()
-        mock_props.total_memory = 24 * 1024**3
-        mock_torch.cuda.get_device_properties.return_value = mock_props
-
-        caps = detect_gpu()
-        assert caps is not None
         assert caps.supports_flash_attn2 is False
 
     @patch("embedding_tests.config.hardware.torch")
     def test_ampere_supports_bf16_and_flash(self, mock_torch: MagicMock) -> None:
         mock_torch.cuda.is_available.return_value = True
+        mock_torch.cuda.device_count.return_value = 1
         mock_torch.cuda.get_device_name.return_value = "NVIDIA A100"
         mock_torch.cuda.get_device_capability.return_value = (8, 0)
         mock_props = MagicMock()

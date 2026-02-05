@@ -8,7 +8,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from embedding_tests.config.hardware import detect_gpu
+from embedding_tests.config.hardware import GpuCapabilities
 from embedding_tests.config.models import PrecisionLevel, load_model_config
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
@@ -22,12 +22,9 @@ class TestFullRAG:
     """Integration tests for complete RAG pipeline."""
 
     def test_full_rag_pipeline_with_small_models(
-        self, configs_dir, sample_corpus, sample_queries
+        self, gpu: GpuCapabilities, configs_dir, sample_corpus, sample_queries
     ) -> None:
         """Run complete RAG pipeline with Qwen3-Embedding-0.6B."""
-        gpu = detect_gpu()
-        if gpu is None:
-            pytest.skip("No CUDA GPU")
 
         embed_config = load_model_config(configs_dir / "models" / "qwen3_embedding_06b.yaml")
         precision = get_precision_config(gpu, PrecisionLevel.FP16)

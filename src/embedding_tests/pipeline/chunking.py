@@ -5,10 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from langchain_text_splitters import (
-    RecursiveCharacterTextSplitter,
-    SentenceTransformersTokenTextSplitter,
-)
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 class ChunkingStrategy(Enum):

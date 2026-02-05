@@ -84,7 +84,7 @@ emb-test report results/                          # Generate reports
 This project follows Compass Brand standards:
 
 - **Rules:** Inherited from parent [compass-brand/.claude/rules/](https://github.com/Compass-Brand/compass-brand/tree/main/.claude/rules)
-- **Coverage:** 80%+ overall (currently 94%), 100% on config/hardware/metrics
+- **Coverage:** 80%+ overall, 100% on config/hardware/metrics
 
 ---
 

@@ -37,7 +37,10 @@ def batch_embed(
         all_embeddings.append(embeddings)
 
     elapsed = time.perf_counter() - start
-    combined = np.concatenate(all_embeddings, axis=0) if all_embeddings else np.array([])
+    if all_embeddings:
+        combined = np.concatenate(all_embeddings, axis=0)
+    else:
+        combined = np.empty((0, 0), dtype=np.float32)
 
     return EmbeddingResult(
         embeddings=combined,

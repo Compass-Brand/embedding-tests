@@ -110,10 +110,15 @@ class RagPipeline:
 
             # 5. Optional reranking
             if self._reranker is not None:
+                # Build lookup from chunk_id to chunk data
+                chunk_lookup = {
+                    f"{c['doc_id']}_chunk_{c['chunk_index']}": c
+                    for c in all_chunks
+                }
                 retrieved_docs = [
-                    {"doc_id": all_chunks[i]["doc_id"], "text": all_chunks[i]["text"]}
-                    for i, r in enumerate(retrieved)
-                    if i < len(all_chunks)
+                    {"doc_id": chunk_lookup[r.doc_id]["doc_id"], "text": chunk_lookup[r.doc_id]["text"]}
+                    for r in retrieved
+                    if r.doc_id in chunk_lookup
                 ]
                 if retrieved_docs:
                     reranked = rerank_results(
@@ -132,6 +137,8 @@ class RagPipeline:
             ))
 
         elapsed = time.perf_counter() - start
+        store.clear()
+
         return RagResult(
             query_results=query_results,
             total_time_seconds=elapsed,

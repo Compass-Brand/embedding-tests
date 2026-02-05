@@ -50,8 +50,8 @@ class VectorStore:
         output: list[RetrievalResult] = []
         if results["ids"] and results["distances"]:
             for doc_id, distance in zip(results["ids"][0], results["distances"][0]):
-                # ChromaDB returns distances; convert to similarity score
-                score = 1.0 - distance if distance <= 1.0 else 1.0 / (1.0 + distance)
+                # ChromaDB cosine distance ranges from 0 to 2; convert to similarity
+                score = 1.0 - (distance / 2.0)
                 output.append(RetrievalResult(doc_id=doc_id, score=score))
 
         # Sort by score descending
@@ -64,4 +64,7 @@ class VectorStore:
 
     def clear(self) -> None:
         """Remove all documents from the store."""
-        self._client.delete_collection(self._collection.name)
+        name = self._collection.name
+        metadata = self._collection.metadata
+        self._client.delete_collection(name)
+        self._collection = self._client.create_collection(name=name, metadata=metadata)

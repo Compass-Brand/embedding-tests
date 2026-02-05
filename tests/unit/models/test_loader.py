@@ -65,6 +65,5 @@ class TestModelLoader:
     ) -> None:
         config = _make_config(ModelType.TEXT_EMBEDDING)
         load_model(config, fp16_precision)
-        _, call_kwargs = mock_st.call_args
         # Precision config passed as positional arg
         assert mock_st.call_args.args[1] == fp16_precision

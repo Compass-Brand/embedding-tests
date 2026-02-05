@@ -52,15 +52,16 @@ class ModelConfig:
             raise ValueError("Model name cannot be empty")
         if self.params_billions <= 0:
             raise ValueError(f"params_billions must be positive, got {self.params_billions}")
-        if self.model_type != ModelType.MULTIMODAL_RERANKER and self.embedding_dim <= 0:
-            raise ValueError(f"embedding_dim must be positive, got {self.embedding_dim}")
         if self.embedding_dim < 0:
             raise ValueError(f"embedding_dim cannot be negative, got {self.embedding_dim}")
+        # Embedding models require positive dimension; rerankers may have zero (unused)
+        if self.model_type != ModelType.MULTIMODAL_RERANKER and self.embedding_dim <= 0:
+            raise ValueError(f"embedding_dim must be positive, got {self.embedding_dim}")
 
 
 def load_model_config(path: Path) -> ModelConfig:
     """Load a ModelConfig from a YAML file."""
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     model_type = ModelType(data["model_type"])
