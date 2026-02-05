@@ -98,6 +98,9 @@ def mean_average_precision(
     AP for a single query is the average of precision values at each
     position where a relevant document is found.
 
+    Queries with empty relevant sets are excluded from the computation,
+    following standard IR evaluation practice.
+
     Args:
         queries: List of (retrieved_doc_ids, relevant_doc_ids) tuples.
 
@@ -108,9 +111,11 @@ def mean_average_precision(
         return 0.0
 
     total_ap = 0.0
+    evaluated_queries = 0
     for retrieved, relevant in queries:
         if not relevant:
             continue
+        evaluated_queries += 1
 
         ap = 0.0
         relevant_found = 0
@@ -124,7 +129,7 @@ def mean_average_precision(
             ap /= len(relevant)
         total_ap += ap
 
-    return total_ap / len(queries)
+    return total_ap / evaluated_queries if evaluated_queries > 0 else 0.0
 
 
 def success_at_k(

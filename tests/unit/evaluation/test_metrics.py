@@ -181,6 +181,27 @@ class TestMeanAveragePrecision:
 
         assert mean_average_precision([]) == 0.0
 
+    def test_map_excludes_empty_relevant_sets(self) -> None:
+        """MAP should exclude queries with empty relevant sets from average."""
+        from embedding_tests.evaluation.metrics import mean_average_precision
+
+        queries = [
+            (["d1", "d2"], {"d1"}),  # AP = 1.0
+            (["d3", "d4"], set()),  # Excluded - no ground truth
+        ]
+        # Only one valid query, so MAP = 1.0 (not 0.5)
+        assert mean_average_precision(queries) == pytest.approx(1.0)
+
+    def test_map_all_empty_relevant_sets(self) -> None:
+        """MAP should be 0 when all queries have empty relevant sets."""
+        from embedding_tests.evaluation.metrics import mean_average_precision
+
+        queries = [
+            (["d1", "d2"], set()),
+            (["d3", "d4"], set()),
+        ]
+        assert mean_average_precision(queries) == 0.0
+
 
 class TestSuccessAtK:
     """Tests for Success@k metric."""
