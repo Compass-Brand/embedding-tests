@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-from embedding_tests.pipeline.embedding import batch_embed, EmbeddingResult
+from embedding_tests.pipeline.embedding import batch_embed
 
 
 class TestBatchEmbed:

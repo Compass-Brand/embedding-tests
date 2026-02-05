@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 
 from embedding_tests.config.experiment import ExperimentConfig, load_experiment_config
-from embedding_tests.config.models import PrecisionLevel
 
 
 class TestLoadExperimentConfig:

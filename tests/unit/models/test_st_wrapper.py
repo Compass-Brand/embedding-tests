@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from embedding_tests.config.hardware import GpuCapabilities
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
 from embedding_tests.hardware.precision import PrecisionConfig
 from embedding_tests.models.base import EmbeddingModel
