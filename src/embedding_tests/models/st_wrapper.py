@@ -63,7 +63,7 @@ class SentenceTransformerWrapper:
         batch_size: int = 32,
     ) -> np.ndarray:
         """Encode texts into embedding vectors."""
-        prompt = self._config.query_instruction if is_query else None
+        prompt = self._config.query_instruction if is_query else self._config.document_instruction
 
         return self._model.encode(
             texts,

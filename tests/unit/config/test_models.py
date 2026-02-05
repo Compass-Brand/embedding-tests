@@ -66,7 +66,7 @@ class TestModelConfig:
         assert config.model_type == ModelType.TEXT_EMBEDDING
         assert config.params_billions == 0.6
         assert config.embedding_dim == 1024
-        assert config.supported_precisions == [PrecisionLevel.FP16, PrecisionLevel.INT8]
+        assert config.supported_precisions == (PrecisionLevel.FP16, PrecisionLevel.INT8)
         assert config.trust_remote_code is True
         assert config.query_instruction == "Represent this query: "
 

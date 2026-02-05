@@ -34,6 +34,9 @@ class TestContextRecall:
         relevant: list[str] = []
         assert compute_context_recall(retrieved, relevant) == 0.0
 
+    def test_context_recall_both_empty(self) -> None:
+        assert compute_context_recall([], []) == 0.0
+
 
 class TestContextPrecision:
     """Tests for context precision computation."""

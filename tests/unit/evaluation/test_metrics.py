@@ -113,3 +113,7 @@ class TestPrecisionAtK:
         retrieved = ["d1", "d4"]
         relevant = {"d1", "d2"}
         assert precision_at_k(retrieved, relevant, k=2) == pytest.approx(0.5)
+
+    def test_precision_at_k_invalid_k_raises(self) -> None:
+        with pytest.raises(ValueError, match="k must be positive"):
+            precision_at_k(["d1"], {"d1"}, k=0)

@@ -80,7 +80,7 @@ class TestPrecisionConfigP40:
 class TestPrecisionConfigAmpere:
     """Tests for Ampere+ GPU precision strategy."""
 
-    def test_ampere_can_use_bf16_and_flash(self, a100_caps: GpuCapabilities) -> None:
+    def test_ampere_upgrades_fp16_to_bf16_with_flash(self, a100_caps: GpuCapabilities) -> None:
         config = get_precision_config(a100_caps, PrecisionLevel.FP16)
         # Ampere can use bf16 storage and flash attention
         assert config.storage_dtype == "bfloat16"

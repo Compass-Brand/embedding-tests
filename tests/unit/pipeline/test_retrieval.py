@@ -71,3 +71,15 @@ class TestVectorStore:
         store = VectorStore(collection_name="test_empty", embedding_dim=3)
         results = store.query(np.array([1.0, 0.0, 0.0]), top_k=5)
         assert results == []
+
+    def test_index_raises_on_count_mismatch(self) -> None:
+        store = VectorStore(collection_name="test_mismatch", embedding_dim=3)
+        embeddings = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+        with pytest.raises(ValueError, match="must match"):
+            store.index(embeddings, ["d1"])
+
+    def test_index_raises_on_dimension_mismatch(self) -> None:
+        store = VectorStore(collection_name="test_dim", embedding_dim=3)
+        embeddings = np.array([[1.0, 0.0]])
+        with pytest.raises(ValueError, match="dimension mismatch"):
+            store.index(embeddings, ["d1"])

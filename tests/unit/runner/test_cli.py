@@ -44,4 +44,4 @@ class TestCLI:
 
     def test_cli_report_command_validates_directory(self) -> None:
         result = runner.invoke(app, ["report", "/nonexistent/path"])
-        assert result.exit_code != 0 or "no results found" in result.stdout.lower() or "error" in result.stdout.lower()
+        assert "no results found" in result.stdout.lower()

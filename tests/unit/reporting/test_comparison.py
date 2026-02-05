@@ -40,3 +40,8 @@ class TestCrossModelComparison:
         # Both precisions for same model
         precisions = {row["precision"] for row in table}
         assert precisions == {"fp16", "int8"}
+
+    def test_precision_impact_table_nonexistent_model(self) -> None:
+        results = [ModelResult("m1", "fp16", 0.8, 0.7, 0.75, 0.6, 10.0)]
+        table = precision_impact_table(results, model_name="nonexistent")
+        assert table == []

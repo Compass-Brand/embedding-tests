@@ -73,6 +73,10 @@ class RagPipeline:
             raise ValueError("chunk_overlap must be less than chunk_size")
         if top_k <= 0:
             raise ValueError("top_k must be positive")
+        if reranker_top_k <= 0:
+            raise ValueError("reranker_top_k must be positive")
+        if embed_batch_size <= 0:
+            raise ValueError("embed_batch_size must be positive")
 
     def run(
         self,
@@ -133,11 +137,13 @@ class RagPipeline:
         }
 
         # 4. Query and retrieve
+        total_query_embed_time = 0.0
         query_results: list[QueryResult] = []
         for q in queries:
             q_embed = batch_embed(
                 self._embedding_model, [q["text"]], batch_size=1, is_query=True
             )
+            total_query_embed_time += q_embed.total_time_seconds
             retrieved = store.query(q_embed.embeddings[0], top_k=self._top_k)
 
             retrieved_doc_ids = [_CHUNK_SUFFIX_RE.sub("", r.doc_id) for r in retrieved]
@@ -181,5 +187,5 @@ class RagPipeline:
             total_time_seconds=elapsed,
             used_reranker=self._reranker is not None,
             num_corpus_chunks=len(all_chunks),
-            embedding_time_seconds=embed_result.total_time_seconds,
+            embedding_time_seconds=embed_result.total_time_seconds + total_query_embed_time,
         )

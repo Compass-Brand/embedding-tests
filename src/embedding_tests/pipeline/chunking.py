@@ -49,6 +49,8 @@ def chunk_text(
         )
         raw_chunks = splitter.split_text(text)
     elif strategy == ChunkingStrategy.TOKEN:
+        # TOKEN uses word count as length function; separators are library defaults
+        # (["\n\n", "\n", " ", ""]) since primary control is chunk_size via length_function
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,

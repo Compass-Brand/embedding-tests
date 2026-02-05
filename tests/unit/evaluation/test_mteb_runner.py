@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -60,8 +60,15 @@ class TestRunMTEBTasks:
 
     def test_mteb_runner_handles_import_error(self) -> None:
         mock_model = MagicMock()
-        from embedding_tests.evaluation.mteb_runner import run_mteb_tasks
-        # Test with a mock that would normally work, but since mteb may not be importable
-        # in test env, verify the function handles it gracefully
-        results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=True)
-        assert "tasks" in results
+        import builtins
+        original_import = builtins.__import__
+
+        def _mock_import(name: str, *args, **kwargs):
+            if name == "mteb":
+                raise ImportError("mocked mteb not installed")
+            return original_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=_mock_import):
+            results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=False)
+        assert "error" in results
+        assert results["error"] == "mteb not installed"

@@ -60,6 +60,9 @@ class VLEmbeddingWrapper:
         batch_size: int = 8,
     ) -> np.ndarray:
         """Encode texts into embedding vectors."""
+        if not texts:
+            return np.empty((0, self._embedding_dim), dtype=np.float32)
+
         all_embeddings: list[np.ndarray] = []
 
         if is_query and self._config.query_instruction:

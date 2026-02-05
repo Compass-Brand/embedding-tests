@@ -71,3 +71,13 @@ class TestRagPipeline:
         assert len(result.query_results) > 0
         assert result.num_corpus_chunks > 0
         assert result.embedding_time_seconds >= 0
+
+    def test_rag_pipeline_rejects_invalid_chunk_size(self) -> None:
+        model = self._make_mock_model()
+        with pytest.raises(ValueError, match="chunk_size must be positive"):
+            RagPipeline(embedding_model=model, chunk_size=0)
+
+    def test_rag_pipeline_rejects_overlap_greater_than_chunk(self) -> None:
+        model = self._make_mock_model()
+        with pytest.raises(ValueError, match="chunk_overlap must be less than chunk_size"):
+            RagPipeline(embedding_model=model, chunk_size=100, chunk_overlap=100)

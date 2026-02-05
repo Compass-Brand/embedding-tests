@@ -57,6 +57,7 @@ class ModelConfig:
         # Embedding models require positive dimension; rerankers may have zero (unused)
         if self.model_type != ModelType.MULTIMODAL_RERANKER and self.embedding_dim <= 0:
             raise ValueError(f"embedding_dim must be positive, got {self.embedding_dim}")
+        object.__setattr__(self, "supported_precisions", tuple(self.supported_precisions))
 
 
 def load_model_config(path: Path) -> ModelConfig:

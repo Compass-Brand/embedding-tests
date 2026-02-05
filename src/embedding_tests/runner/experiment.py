@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from embedding_tests.config.hardware import detect_gpu
+from embedding_tests.config.hardware import GpuCapabilities, detect_gpu
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
 from embedding_tests.evaluation.metrics import recall_at_k, precision_at_k
 from embedding_tests.hardware.precision import get_precision_config
@@ -67,7 +67,7 @@ class ExperimentRunner:
         self,
         model_config: ModelConfig,
         precision: PrecisionLevel,
-        gpu: Any,
+        gpu: GpuCapabilities | None,
     ) -> dict[str, Any]:
         """Run a single model/precision combination."""
         name = model_config.name
@@ -140,7 +140,7 @@ class ExperimentRunner:
             return result
 
         except Exception as e:
-            logger.error("Failed %s/%s: %s", name, prec, e)
+            logger.error("Failed %s/%s: %s", name, prec, e, exc_info=True)
             return {"model": name, "precision": prec, "error": str(e)}
 
         finally:

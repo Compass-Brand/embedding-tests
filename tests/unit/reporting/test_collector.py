@@ -68,3 +68,10 @@ class TestResultsCollector:
         collector = ResultsCollector()
         assert collector.results == []
         assert collector.filter_by_model("nonexistent") == []
+
+    def test_results_property_returns_copy(self) -> None:
+        collector = ResultsCollector()
+        collector.add(ModelResult("m1", "fp16", 0.8, 0.7, 0.75, 0.6, 10.0))
+        results = collector.results
+        results.clear()
+        assert len(collector.results) == 1

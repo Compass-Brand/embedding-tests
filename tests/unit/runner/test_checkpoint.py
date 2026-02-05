@@ -80,3 +80,9 @@ class TestCheckpoint:
         cp_path = tmp_path / "checkpoints"
         save_checkpoint(checkpoint_dir=cp_path, model_name="m1", precision="fp16", status="in_progress", results={})
         assert is_completed(cp_path, "m1", "fp16") is False
+
+    def test_checkpoint_path_sanitizes_special_characters(self, tmp_path: Path) -> None:
+        path = get_checkpoint_path(tmp_path, "org/model-name:v1", "fp16")
+        assert "/" not in path.name
+        assert ":" not in path.name
+        assert path.suffix == ".json"

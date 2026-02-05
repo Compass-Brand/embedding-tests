@@ -53,6 +53,9 @@ def load_experiment_config(
     with open(experiment_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
+    if data is None:
+        raise ValueError(f"Empty or invalid YAML file: {experiment_path}")
+
     # Validate name field early
     if "name" not in data:
         raise ValueError("Experiment config must have a 'name' field")

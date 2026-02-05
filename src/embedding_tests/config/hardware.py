@@ -29,7 +29,7 @@ def detect_gpu(device_index: int = 0) -> GpuCapabilities | None:
         return None
 
     device_count = torch.cuda.device_count()
-    if device_index >= device_count:
+    if device_index < 0 or device_index >= device_count:
         raise ValueError(
             f"device_index {device_index} out of range; only {device_count} GPU(s) available"
         )
