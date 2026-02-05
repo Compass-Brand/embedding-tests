@@ -83,6 +83,8 @@ class ExperimentRunner:
                     "precision": checkpoint.get("precision", prec),
                     "status": checkpoint.get("status"),
                     "results": checkpoint.get("results"),
+                    "mrr": checkpoint.get("mrr", 0.0),
+                    "total_time": checkpoint.get("total_time", 0.0),
                 }
             logger.warning("Checkpoint marked complete but data missing for %s/%s", name, prec)
             return {"model": name, "precision": prec, "status": "completed_missing_data", "results": None}
@@ -148,7 +150,10 @@ class ExperimentRunner:
                 "total_time": rag_result.total_time_seconds,
             }
 
-            save_checkpoint(self._checkpoint_dir, name, prec, "completed", metrics)
+            save_checkpoint(
+                self._checkpoint_dir, name, prec, "completed", metrics,
+                mrr=mrr_score, total_time=rag_result.total_time_seconds
+            )
             return result
 
         except Exception as e:

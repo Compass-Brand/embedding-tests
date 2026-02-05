@@ -29,16 +29,23 @@ def save_checkpoint(
     precision: str,
     status: str,
     results: dict[str, Any],
+    *,
+    mrr: float | None = None,
+    total_time: float | None = None,
 ) -> Path:
     """Save a checkpoint file."""
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     path = get_checkpoint_path(checkpoint_dir, model_name, precision)
-    data = {
+    data: dict[str, Any] = {
         "model_name": model_name,
         "precision": precision,
         "status": status,
         "results": results,
     }
+    if mrr is not None:
+        data["mrr"] = mrr
+    if total_time is not None:
+        data["total_time"] = total_time
     try:
         fd, tmp_path = tempfile.mkstemp(
             dir=checkpoint_dir, suffix=".tmp", prefix=".checkpoint_"

@@ -108,3 +108,20 @@ class TestCheckpoint:
                     status="completed",
                     results={},
                 )
+
+    def test_save_and_load_checkpoint_with_timing_and_mrr(self, tmp_path: Path) -> None:
+        """Test that mrr and total_time are persisted and loaded correctly."""
+        cp_path = tmp_path / "checkpoints"
+        save_checkpoint(
+            checkpoint_dir=cp_path,
+            model_name="test-model",
+            precision="fp16",
+            status="completed",
+            results={"recall_at_10": 0.9},
+            mrr=0.85,
+            total_time=1.234,
+        )
+        loaded = load_checkpoint(cp_path, model_name="test-model", precision="fp16")
+        assert loaded is not None
+        assert loaded["mrr"] == 0.85
+        assert loaded["total_time"] == 1.234
