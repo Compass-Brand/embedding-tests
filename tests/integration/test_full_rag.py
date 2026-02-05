@@ -5,14 +5,18 @@ Run with: pytest -m gpu tests/integration/
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 import torch
 
-from embedding_tests.config.hardware import GpuCapabilities
 from embedding_tests.config.models import PrecisionLevel, load_model_config
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 from embedding_tests.pipeline.rag import RagPipeline
+
+if TYPE_CHECKING:
+    from embedding_tests.config.hardware import GpuCapabilities
 
 
 pytestmark = [pytest.mark.gpu, pytest.mark.slow]

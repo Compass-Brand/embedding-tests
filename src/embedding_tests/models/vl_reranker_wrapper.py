@@ -78,8 +78,11 @@ class VLRerankerWrapper:
         device = next(self._model.parameters()).device
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
+        orig_training = self._model.training
+        self._model.eval()
         with torch.no_grad():
             outputs = self._model(**inputs)
+        self._model.train(orig_training)
 
         logits = outputs.logits.squeeze(-1)
         if logits.dim() == 0:

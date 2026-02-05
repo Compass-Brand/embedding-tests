@@ -44,31 +44,21 @@ def chunk_text(
         raise ValueError(
             f"chunk_overlap ({chunk_overlap}) must be less than chunk_size ({chunk_size})"
         )
-    if strategy == ChunkingStrategy.RECURSIVE:
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=["\n\n", "\n", ". ", " ", ""],
-        )
-        raw_chunks = splitter.split_text(text)
-    elif strategy == ChunkingStrategy.SENTENCE:
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=[". ", "\n\n", "\n", " ", ""],
-        )
-        raw_chunks = splitter.split_text(text)
-    elif strategy == ChunkingStrategy.TOKEN:
-        # TOKEN uses word count as length function; separators are library defaults
-        # (["\n\n", "\n", " ", ""]) since primary control is chunk_size via length_function
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            length_function=lambda t: len(t.split()),
-        )
-        raw_chunks = splitter.split_text(text)
-    else:
-        raise ValueError(f"Unknown chunking strategy: {strategy}")
+    splitter_kwargs: dict[str, object] = {
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
+    }
+    match strategy:
+        case ChunkingStrategy.RECURSIVE:
+            splitter_kwargs["separators"] = ["\n\n", "\n", ". ", " ", ""]
+        case ChunkingStrategy.SENTENCE:
+            splitter_kwargs["separators"] = [". ", "\n\n", "\n", " ", ""]
+        case ChunkingStrategy.TOKEN:
+            splitter_kwargs["length_function"] = lambda t: len(t.split())
+        case _:
+            raise ValueError(f"Unknown chunking strategy: {strategy}")
+    splitter = RecursiveCharacterTextSplitter(**splitter_kwargs)
+    raw_chunks = splitter.split_text(text)
 
     return [
         ChunkMetadata(text=chunk, source_doc_id=source_doc_id, chunk_index=i)

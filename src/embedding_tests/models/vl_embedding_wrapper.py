@@ -83,7 +83,11 @@ class VLEmbeddingWrapper:
                 batch,
                 **tokenizer_kwargs,
             )
-            device = self._model.get_input_embeddings().weight.device
+            if hasattr(self._model, 'hf_device_map') and self._model.hf_device_map:
+                first_device = next(iter(self._model.hf_device_map.values()))
+                device = torch.device(first_device) if isinstance(first_device, str) else first_device
+            else:
+                device = next(self._model.parameters()).device
             inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():

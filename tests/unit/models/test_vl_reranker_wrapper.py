@@ -139,6 +139,7 @@ class TestVLRerankerWrapper:
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
+        mock_torch.cuda.is_available.return_value = True
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         wrapper.unload()
         mock_torch.cuda.empty_cache.assert_called_once()

@@ -44,7 +44,7 @@ def precision_impact_table(
     model_name: str,
 ) -> list[dict[str, Any]]:
     """Show precision impact for a single model."""
-    filtered = [r for r in results if r.model_name == model_name]
+    filtered = [r for r in results if r.model_name == model_name and not r.error]
     rows = []
     for r in filtered:
         rows.append({

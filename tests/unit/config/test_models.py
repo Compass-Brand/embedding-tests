@@ -116,6 +116,17 @@ class TestModelConfig:
                 supported_precisions=[PrecisionLevel.FP16],
             )
 
+    def test_model_config_validation_rejects_zero_params(self) -> None:
+        with pytest.raises(ValueError, match="must be positive"):
+            ModelConfig(
+                name="test",
+                model_id="org/test",
+                model_type=ModelType.TEXT_EMBEDDING,
+                params_billions=0.0,
+                embedding_dim=768,
+                supported_precisions=[PrecisionLevel.FP16],
+            )
+
 
 class TestLoadModelConfig:
     """Tests for YAML config loading."""

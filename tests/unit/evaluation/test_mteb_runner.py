@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -52,7 +53,7 @@ class TestRunMTEBTasks:
         mock_model.encode.return_value = np.array([[0.1, 0.2]])
 
         # Don't actually run MTEB, just verify structure
-        results = run_mteb_tasks(mock_model, task_types=[], dry_run=True)
+        results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=True)
         assert isinstance(results, dict)
 
     def test_mteb_runner_handles_import_error(self) -> None:
@@ -65,8 +66,10 @@ class TestRunMTEBTasks:
                 raise ImportError("mocked mteb not installed")
             return original_import(name, *args, **kwargs)
 
-        with patch("builtins.__import__", side_effect=_mock_import):
-            results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=False)
+        with patch.dict(sys.modules, {"mteb": None}):
+            sys.modules.pop("mteb", None)
+            with patch("builtins.__import__", side_effect=_mock_import):
+                results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=False)
         assert "error" in results
         assert results["error"] == "mteb not installed"
 
@@ -81,3 +84,13 @@ class TestRunMTEBTasks:
         mock_model = MagicMock()
         with pytest.raises(ValueError, match="must be provided"):
             run_mteb_tasks(mock_model)
+
+    def test_mteb_runner_rejects_empty_task_types(self) -> None:
+        mock_model = MagicMock()
+        with pytest.raises(ValueError, match="must not be empty"):
+            run_mteb_tasks(mock_model, task_types=[], dry_run=True)
+
+    def test_mteb_runner_rejects_empty_task_names(self) -> None:
+        mock_model = MagicMock()
+        with pytest.raises(ValueError, match="must not be empty"):
+            run_mteb_tasks(mock_model, task_names=[], dry_run=True)

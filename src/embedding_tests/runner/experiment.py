@@ -103,6 +103,7 @@ class ExperimentRunner:
 
         model = None
         try:
+            # GPU is required for model loading; skip combination if unavailable
             if gpu is None:
                 return {"model": name, "precision": prec, "error": "No GPU detected"}
             precision_config = get_precision_config(gpu, precision)

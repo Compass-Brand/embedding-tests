@@ -87,7 +87,10 @@ class TestVLEmbeddingWrapper:
             [[[0.1, 0.2], [0.3, 0.4]], [[0.5, 0.6], [0.7, 0.8]]]
         )
         mock_model.return_value = mock_output
-        mock_model.get_input_embeddings.return_value.weight.device = torch.device("cpu")
+        # No device_map for non-sharded mock; fallback to parameters().device
+        mock_model.hf_device_map = {}
+        mock_param = torch.nn.Parameter(torch.empty(1, device="cpu"))
+        mock_model.parameters.return_value = iter([mock_param])
         mock_auto_model.from_pretrained.return_value = mock_model
 
         mock_tok = MagicMock()

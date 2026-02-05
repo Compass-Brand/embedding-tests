@@ -15,6 +15,7 @@ from embedding_tests.runner.experiment import ExperimentRunner
 app = typer.Typer(name="emb-test", help="Embedding model testing framework")
 console = Console()
 
+# Navigate from src/embedding_tests/runner/cli.py to project root
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIGS_DIR = Path(os.environ.get("EMB_TEST_CONFIGS_DIR", str(_PACKAGE_ROOT / "configs")))
 MODELS_DIR = Path(os.environ.get("EMB_TEST_MODELS_DIR", str(CONFIGS_DIR / "models")))
@@ -39,8 +40,8 @@ def run(
     runner = ExperimentRunner(
         model_configs=experiment.models,
         precisions=experiment.precisions,
-        corpus=[],  # Will be loaded from datasets
-        queries=[],
+        corpus=[],  # TODO: implement dataset loading from experiment config
+        queries=[],  # TODO: implement dataset loading from experiment config
         checkpoint_dir=Path(checkpoint_dir),
         top_k=experiment.pipeline.retrieval_top_k,
         chunk_size=experiment.pipeline.chunk_size,
@@ -89,6 +90,7 @@ def report(
         console.print(f"[yellow]No results found at {results_path}[/yellow]")
         raise typer.Exit(0)
 
+    # TODO: Implement report generation logic
     console.print(f"[green]Generating {output_format} report from {results_path}[/green]")
 
 

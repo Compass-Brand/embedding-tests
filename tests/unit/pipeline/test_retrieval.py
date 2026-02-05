@@ -44,10 +44,15 @@ class TestDistanceToScore:
 
     def test_ip_distance_returns_normalized_score(self) -> None:
         store = VectorStore(collection_name="test_ip", embedding_dim=2, metric="ip")
-        # IP normalization: max(0.0, min(1.0, (1.0 - distance) / 2.0))
-        assert store._distance_to_score(1.0) == 0.0
+        # IP: dot = 1.0 - distance, score = clamp((dot + 1.0) / 2.0, 0, 1)
+        # distance=1.0 -> dot=0.0 -> (0.0+1.0)/2.0 = 0.5
+        assert store._distance_to_score(1.0) == 0.5
+        # distance=-1.0 -> dot=2.0 -> (2.0+1.0)/2.0 = 1.5 -> clamped to 1.0
         assert store._distance_to_score(-1.0) == 1.0
-        assert store._distance_to_score(0.0) == 0.5
+        # distance=0.0 -> dot=1.0 -> (1.0+1.0)/2.0 = 1.0
+        assert store._distance_to_score(0.0) == 1.0
+        # distance=2.0 -> dot=-1.0 -> (-1.0+1.0)/2.0 = 0.0
+        assert store._distance_to_score(2.0) == 0.0
 
 
 class TestVectorStoreValidation:

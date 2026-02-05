@@ -82,7 +82,7 @@ def get_precision_config(
         return PrecisionConfig(
             storage_dtype="bfloat16",
             compute_dtype="bfloat16",
-            attn_implementation="flash_attention_2" if gpu.supports_flash_attn2 else "eager",
+            attn_implementation=attn_impl,
             use_autocast=True,
             quantization_config=None,
         )

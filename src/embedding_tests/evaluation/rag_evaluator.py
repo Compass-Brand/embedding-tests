@@ -24,13 +24,16 @@ def compute_context_precision(
     retrieved: list[str],
     relevant: list[str],
 ) -> float:
-    """Compute context precision: fraction of retrieved docs that are relevant."""
+    """Compute context precision: fraction of retrieved docs that are relevant.
+
+    Counts matches against the raw retrieved list (preserving duplicates)
+    so that duplicate retrievals reduce precision appropriately.
+    """
     if not retrieved:
         return 0.0
     relevant_set = set(relevant)
-    retrieved_set = set(retrieved)
-    found = len(retrieved_set & relevant_set)
-    return found / len(retrieved_set)
+    found = sum(1 for doc in retrieved if doc in relevant_set)
+    return found / len(retrieved)
 
 
 def aggregate_scores(scores: list[float]) -> float:

@@ -46,7 +46,7 @@ class TestExperimentRunner:
             total_vram_gb=24.0, supports_bf16=False, supports_flash_attn2=False,
         )
         mock_model = MagicMock()
-        mock_model.encode.side_effect = lambda texts, **kw: np.random.randn(len(texts), 1024)
+        mock_model.encode.side_effect = lambda texts, **kw: np.ones((len(texts), 1024))
         mock_model.get_embedding_dim.return_value = 1024
         mock_loader.return_value = mock_model
 
@@ -83,7 +83,7 @@ class TestExperimentRunner:
             total_vram_gb=24.0, supports_bf16=False, supports_flash_attn2=False,
         )
         mock_model = MagicMock()
-        mock_model.encode.side_effect = lambda texts, **kw: np.random.randn(len(texts), 1024)
+        mock_model.encode.side_effect = lambda texts, **kw: np.ones((len(texts), 1024))
         mock_model.get_embedding_dim.return_value = 1024
         mock_loader.return_value = mock_model
 

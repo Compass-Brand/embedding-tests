@@ -79,6 +79,8 @@ def run_mteb_tasks(
         raise ValueError("Provide only one of task_types or task_names")
     if task_types is None and task_names is None:
         raise ValueError("Either task_types or task_names must be provided")
+    if (task_types is not None and not task_types) or (task_names is not None and not task_names):
+        raise ValueError("task_types and task_names must not be empty")
 
     if dry_run:
         return {"tasks": [], "dry_run": True}

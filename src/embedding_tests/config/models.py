@@ -66,6 +66,8 @@ def load_model_config(path: Path) -> ModelConfig:
     """Load a ModelConfig from a YAML file."""
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
+    if data is None:
+        raise ValueError(f"Empty or invalid YAML file: {path}")
 
     required_keys = {"name", "model_id", "model_type", "params_billions", "embedding_dim", "supported_precisions"}
     missing = required_keys - data.keys()

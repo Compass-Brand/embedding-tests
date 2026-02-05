@@ -89,7 +89,8 @@ class VectorStore:
         elif self._metric == "l2":
             return 1.0 / (1.0 + distance)
         elif self._metric == "ip":
-            return max(0.0, min(1.0, (1.0 - distance) / 2.0))
+            dot = 1.0 - distance
+            return max(0.0, min(1.0, (dot + 1.0) / 2.0))
         else:
             return 1.0 - distance
 

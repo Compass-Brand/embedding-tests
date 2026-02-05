@@ -33,7 +33,8 @@ def batch_embed(
 
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
-        embeddings = model.encode(batch, is_query=is_query, batch_size=batch_size)
+        # Outer loop handles memory-controlled batching; model uses its own internal batching
+        embeddings = model.encode(batch, is_query=is_query)
         all_embeddings.append(embeddings)
 
     elapsed = time.perf_counter() - start
