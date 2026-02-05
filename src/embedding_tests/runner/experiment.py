@@ -9,7 +9,7 @@ from typing import Any
 
 from embedding_tests.config.hardware import GpuCapabilities, detect_gpu
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
-from embedding_tests.evaluation.metrics import recall_at_k, precision_at_k
+from embedding_tests.evaluation.metrics import mrr, ndcg_at_k, precision_at_k, recall_at_k
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 from embedding_tests.pipeline.rag import RagPipeline
@@ -119,22 +119,32 @@ class ExperimentRunner:
             )
             rag_result = pipeline.run(self._corpus, self._queries)
 
-            # Compute metrics
+            # Compute metrics per query
             metrics: dict[str, Any] = {}
+            mrr_inputs: list[tuple[list[str], set[str]]] = []
             for qr in rag_result.query_results:
                 relevant = set(qr.relevant_doc_ids)
                 r_k = recall_at_k(qr.retrieved_doc_ids, relevant, k=self._top_k)
                 p_k = precision_at_k(qr.retrieved_doc_ids, relevant, k=self._top_k)
+                # For NDCG, treat relevant docs as having relevance=1.0
+                relevance_scores = {doc_id: 1.0 for doc_id in qr.relevant_doc_ids}
+                ndcg = ndcg_at_k(qr.retrieved_doc_ids, relevance_scores, k=self._top_k)
                 metrics[qr.query_id] = {
                     f"recall_at_{self._top_k}": r_k,
                     f"precision_at_{self._top_k}": p_k,
+                    f"ndcg_at_{self._top_k}": ndcg,
                 }
+                mrr_inputs.append((qr.retrieved_doc_ids, relevant))
+
+            # Compute MRR across all queries
+            mrr_score = mrr(mrr_inputs)
 
             result = {
                 "model": name,
                 "precision": prec,
                 "status": "completed",
                 "results": metrics,
+                "mrr": mrr_score,
                 "total_time": rag_result.total_time_seconds,
             }
 

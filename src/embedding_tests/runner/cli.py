@@ -166,22 +166,28 @@ def _entry_to_model_result(entry: dict) -> ModelResult | None:
     # Average per-query metrics
     recalls = []
     precisions = []
+    ndcgs = []
     for qid, metrics in results.items():
         for key, val in metrics.items():
             if "recall" in key:
                 recalls.append(val)
             elif "precision" in key:
                 precisions.append(val)
+            elif "ndcg" in key:
+                ndcgs.append(val)
 
     avg_recall = sum(recalls) / len(recalls) if recalls else 0.0
     avg_precision = sum(precisions) / len(precisions) if precisions else 0.0
+    avg_ndcg = sum(ndcgs) / len(ndcgs) if ndcgs else 0.0
+    # MRR is stored at the top level (computed across all queries)
+    mrr_score = entry.get("mrr", 0.0)
 
     return ModelResult(
         model_name=entry.get("model", "unknown"),
         precision=entry.get("precision", "unknown"),
         recall_at_10=avg_recall,
-        mrr=0.0,
-        ndcg_at_10=0.0,
+        mrr=mrr_score,
+        ndcg_at_10=avg_ndcg,
         precision_at_10=avg_precision,
         total_time_seconds=entry.get("total_time", 0.0),
     )
