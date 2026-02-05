@@ -40,7 +40,7 @@ def batch_embed(
     if all_embeddings:
         combined = np.concatenate(all_embeddings, axis=0)
     else:
-        combined = np.empty((0, 0), dtype=np.float32)
+        combined = np.empty((0, model.get_embedding_dim()), dtype=np.float32)
 
     return EmbeddingResult(
         embeddings=combined,

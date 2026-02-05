@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import torch
 
-from embedding_tests.config.models import ModelType, PrecisionLevel, load_model_config
+from embedding_tests.config.models import PrecisionLevel, load_model_config
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 

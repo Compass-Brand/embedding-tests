@@ -75,7 +75,7 @@ class VLRerankerWrapper:
             scores.append(score)
 
         # Create (index, score) tuples sorted by score descending
-        indexed_scores = [(i, s) for i, s in enumerate(scores)]
+        indexed_scores = list(enumerate(scores))
         indexed_scores.sort(key=lambda x: x[1], reverse=True)
 
         return indexed_scores[:top_k]

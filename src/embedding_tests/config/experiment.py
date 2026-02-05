@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 import yaml
@@ -77,7 +77,14 @@ def load_experiment_config(
 
     # Parse pipeline config
     pipeline_data = data.get("pipeline", {})
-    pipeline = PipelineConfig(**pipeline_data) if pipeline_data else PipelineConfig()
+    if pipeline_data:
+        known_fields = {f.name for f in fields(PipelineConfig)}
+        unknown = set(pipeline_data.keys()) - known_fields
+        if unknown:
+            raise ValueError(f"Unknown pipeline fields: {sorted(unknown)}. Valid: {sorted(known_fields)}")
+        pipeline = PipelineConfig(**pipeline_data)
+    else:
+        pipeline = PipelineConfig()
 
     return ExperimentConfig(
         name=data["name"],

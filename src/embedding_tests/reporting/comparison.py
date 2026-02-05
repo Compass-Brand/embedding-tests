@@ -50,4 +50,5 @@ def precision_impact_table(
             "precision_at_10": r.precision_at_10,
             "time_seconds": r.total_time_seconds,
         })
+    rows.sort(key=lambda x: x["precision"])
     return rows

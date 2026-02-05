@@ -5,6 +5,7 @@ models:
   - qwen3-vl-reranker-8b
 precisions:
   - fp16
+  - int8
 pipeline:
   chunk_size: 512
   chunk_overlap: 50

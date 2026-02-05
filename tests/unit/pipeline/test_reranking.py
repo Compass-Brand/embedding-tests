@@ -51,3 +51,15 @@ class TestReranking:
         results = rerank_results("query", docs, mock_reranker, top_k=1)
         assert results[0].doc_id == "d1"
         assert results[0].metadata.get("source") == "wiki"
+
+    def test_rerank_raises_on_missing_doc_id(self) -> None:
+        mock_reranker = MagicMock()
+        docs = [{"text": "content"}]  # missing doc_id
+        with pytest.raises(ValueError, match="missing required"):
+            rerank_results("query", docs, mock_reranker, top_k=1)
+
+    def test_rerank_handles_empty_documents(self) -> None:
+        mock_reranker = MagicMock()
+        mock_reranker.rerank.return_value = []
+        results = rerank_results("query", [], mock_reranker, top_k=1)
+        assert results == []

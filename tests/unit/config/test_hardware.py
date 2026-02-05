@@ -81,3 +81,10 @@ class TestDetectGpu:
         assert caps is not None
         assert caps.supports_bf16 is True
         assert caps.supports_flash_attn2 is True
+
+    @patch("embedding_tests.config.hardware.torch")
+    def test_detect_gpu_raises_on_invalid_device_index(self, mock_torch: MagicMock) -> None:
+        mock_torch.cuda.is_available.return_value = True
+        mock_torch.cuda.device_count.return_value = 1
+        with pytest.raises(ValueError, match="device_index 1 out of range"):
+            detect_gpu(device_index=1)

@@ -56,3 +56,16 @@ class TestVectorStore:
         query = np.array([1.0, 0.0])
         results = store.query(query, top_k=2)
         assert results[0].doc_id == "d1"
+
+    def test_clear_removes_all_documents(self) -> None:
+        store = VectorStore(collection_name="test_clear", embedding_dim=3)
+        embeddings = np.array([[1.0, 0.0, 0.0]])
+        store.index(embeddings, ["d1"])
+        assert store.count() == 1
+        store.clear()
+        assert store.count() == 0
+
+    def test_query_empty_store_returns_empty_list(self) -> None:
+        store = VectorStore(collection_name="test_empty", embedding_dim=3)
+        results = store.query(np.array([1.0, 0.0, 0.0]), top_k=5)
+        assert results == []

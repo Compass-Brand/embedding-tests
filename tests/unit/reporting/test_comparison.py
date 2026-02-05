@@ -25,6 +25,11 @@ class TestCrossModelComparison:
         assert table[0]["model_name"] == "m2"
         assert table[0]["recall_at_10"] == 0.9
 
+    def test_cross_model_comparison_invalid_metric_raises(self) -> None:
+        results = [ModelResult("m1", "fp16", 0.8, 0.7, 0.75, 0.6, 10.0)]
+        with pytest.raises(ValueError, match="Unknown metric"):
+            cross_model_comparison(results, metric="invalid_metric")
+
     def test_precision_impact_table(self) -> None:
         results = [
             ModelResult("m1", "fp16", 0.8, 0.7, 0.75, 0.6, 10.0),

@@ -16,7 +16,7 @@ This file provides guidance to Claude Code when working in this repository.
 |---|---|
 | Language | Python 3.11+ |
 | Testing | pytest |
-| ML | torch, transformers (>=4.57.0), sentence-transformers |
+| ML | torch, transformers (>=4.55.0), sentence-transformers |
 | Quantization | bitsandbytes |
 | RAG | chromadb, langchain-text-splitters |
 | Evaluation | mteb, ragas |

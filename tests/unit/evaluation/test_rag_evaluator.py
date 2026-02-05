@@ -29,6 +29,11 @@ class TestContextRecall:
         relevant = ["d1", "d2"]
         assert compute_context_recall(retrieved, relevant) == pytest.approx(0.5)
 
+    def test_context_recall_empty_relevant(self) -> None:
+        retrieved = ["d1", "d2"]
+        relevant: list[str] = []
+        assert compute_context_recall(retrieved, relevant) == 0.0
+
 
 class TestContextPrecision:
     """Tests for context precision computation."""
@@ -42,6 +47,16 @@ class TestContextPrecision:
         retrieved = ["d1", "d3"]
         relevant = ["d1", "d2"]
         assert compute_context_precision(retrieved, relevant) == pytest.approx(0.5)
+
+    def test_context_precision_empty_retrieved(self) -> None:
+        retrieved: list[str] = []
+        relevant = ["d1", "d2"]
+        assert compute_context_precision(retrieved, relevant) == 0.0
+
+    def test_context_precision_none_relevant(self) -> None:
+        retrieved = ["d3", "d4"]
+        relevant = ["d1", "d2"]
+        assert compute_context_precision(retrieved, relevant) == 0.0
 
 
 class TestAggregateScores:

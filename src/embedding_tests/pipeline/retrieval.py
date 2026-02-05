@@ -32,9 +32,15 @@ class VectorStore:
             metadata=metadata,
         )
         self._embedding_dim = embedding_dim
+        self._metric = metric
 
     def index(self, embeddings: np.ndarray, doc_ids: list[str]) -> None:
         """Add embeddings to the store."""
+        if embeddings.shape[1] != self._embedding_dim:
+            raise ValueError(
+                f"Embedding dimension mismatch: expected {self._embedding_dim}, "
+                f"got {embeddings.shape[1]}"
+            )
         self._collection.add(
             embeddings=embeddings.tolist(),
             ids=doc_ids,
@@ -42,6 +48,9 @@ class VectorStore:
 
     def query(self, query_embedding: np.ndarray, top_k: int = 10) -> list[RetrievalResult]:
         """Query for similar documents."""
+        if self._collection.count() == 0:
+            return []
+
         results = self._collection.query(
             query_embeddings=[query_embedding.tolist()],
             n_results=top_k,
@@ -50,13 +59,23 @@ class VectorStore:
         output: list[RetrievalResult] = []
         if results["ids"] and results["distances"]:
             for doc_id, distance in zip(results["ids"][0], results["distances"][0]):
-                # ChromaDB cosine distance ranges from 0 to 2; convert to similarity
-                score = 1.0 - (distance / 2.0)
+                score = self._distance_to_score(distance)
                 output.append(RetrievalResult(doc_id=doc_id, score=score))
 
         # Sort by score descending
         output.sort(key=lambda r: r.score, reverse=True)
         return output
+
+    def _distance_to_score(self, distance: float) -> float:
+        """Convert a distance value to a similarity score based on the metric."""
+        if self._metric == "cosine":
+            return 1.0 - (distance / 2.0)
+        elif self._metric == "l2":
+            return 1.0 / (1.0 + distance)
+        elif self._metric == "ip":
+            return -distance
+        else:
+            return 1.0 - distance
 
     def count(self) -> int:
         """Return number of documents in store."""

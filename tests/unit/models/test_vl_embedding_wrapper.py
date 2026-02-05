@@ -113,6 +113,7 @@ class TestVLEmbeddingWrapper:
     ) -> None:
         from embedding_tests.models.vl_embedding_wrapper import VLEmbeddingWrapper
 
+        mock_torch.cuda.is_available.return_value = True
         wrapper = VLEmbeddingWrapper(vl_model_config, fp16_precision)
         wrapper.unload()
         mock_torch.cuda.empty_cache.assert_called_once()

@@ -23,8 +23,17 @@ class SentenceTransformerWrapper:
         self._precision = precision
         self._embedding_dim = config.embedding_dim
 
+        _QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
+
+        if precision.storage_dtype in _QUANTIZED_DTYPES:
+            torch_dtype = torch.float16
+        elif hasattr(torch, precision.storage_dtype):
+            torch_dtype = getattr(torch, precision.storage_dtype)
+        else:
+            raise ValueError(f"Invalid storage dtype: {precision.storage_dtype}")
+
         model_kwargs: dict[str, object] = {
-            "torch_dtype": getattr(torch, precision.storage_dtype, torch.float16),
+            "torch_dtype": torch_dtype,
             "attn_implementation": precision.attn_implementation,
         }
 

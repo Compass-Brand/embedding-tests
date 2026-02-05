@@ -11,7 +11,7 @@ from embedding_tests.reporting.collector import ModelResult
 
 _FIELDS = [
     "model_name", "precision", "recall_at_10", "mrr",
-    "ndcg_at_10", "precision_at_10", "total_time_seconds",
+    "ndcg_at_10", "precision_at_10", "total_time_seconds", "error",
 ]
 
 
@@ -19,7 +19,7 @@ def export_json(results: list[ModelResult], output_path: Path) -> None:
     """Export results to JSON."""
     data = [asdict(r) for r in results]
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(data, indent=2))
+    output_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def export_csv(results: list[ModelResult], output_path: Path) -> None:
@@ -52,4 +52,4 @@ def export_markdown(results: list[ModelResult], output_path: Path) -> None:
         ]
         lines.append("| " + " | ".join(row) + " |")
 
-    output_path.write_text("\n".join(lines) + "\n")
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

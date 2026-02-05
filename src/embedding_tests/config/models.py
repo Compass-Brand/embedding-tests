@@ -64,6 +64,11 @@ def load_model_config(path: Path) -> ModelConfig:
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
+    required_keys = {"name", "model_id", "model_type", "params_billions", "embedding_dim", "supported_precisions"}
+    missing = required_keys - data.keys()
+    if missing:
+        raise ValueError(f"Missing required keys in {path}: {sorted(missing)}")
+
     model_type = ModelType(data["model_type"])
 
     precisions: list[PrecisionLevel] = []

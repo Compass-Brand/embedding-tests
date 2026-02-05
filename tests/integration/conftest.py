@@ -7,7 +7,7 @@ import pytest
 from embedding_tests.config.hardware import GpuCapabilities, detect_gpu
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def gpu() -> GpuCapabilities:
     """Detect GPU and skip if not available."""
     detected_gpu = detect_gpu()

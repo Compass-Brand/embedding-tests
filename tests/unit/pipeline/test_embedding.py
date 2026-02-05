@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import numpy as np
-import pytest
 
 from embedding_tests.pipeline.embedding import batch_embed
 
@@ -47,3 +46,11 @@ class TestBatchEmbed:
 
         result = batch_embed(mock_model, [f"text_{i}" for i in range(10)], batch_size=32)
         assert result.embeddings.shape == (10, 768)
+
+    def test_batch_embed_empty_input_returns_empty_array(self) -> None:
+        mock_model = MagicMock()
+        mock_model.get_embedding_dim.return_value = 768
+        result = batch_embed(mock_model, [], batch_size=32)
+        assert result.embeddings.shape[0] == 0
+        assert result.num_texts == 0
+        mock_model.encode.assert_not_called()

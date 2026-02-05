@@ -47,6 +47,8 @@ class TestRagPipeline:
         )
         result = pipeline.run(corpus, queries)
         assert result is not None
+        assert result.used_reranker is True
+        reranker.rerank.assert_called()
 
     def test_rag_pipeline_without_reranking(self) -> None:
         model = self._make_mock_model()
@@ -67,3 +69,5 @@ class TestRagPipeline:
         result = pipeline.run(corpus, queries)
         assert result.total_time_seconds > 0
         assert len(result.query_results) > 0
+        assert result.num_corpus_chunks > 0
+        assert result.embedding_time_seconds >= 0

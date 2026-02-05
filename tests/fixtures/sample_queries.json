@@ -2,13 +2,13 @@
   {
     "query_id": "q_001",
     "text": "How do vector databases work for semantic search?",
-    "relevant_doc_ids": ["doc_001", "doc_010"],
+    "relevant_doc_ids": ["doc_001", "doc_009"],
     "category": "retrieval_basics"
   },
   {
     "query_id": "q_002",
     "text": "What is the reranking technique in information retrieval?",
-    "relevant_doc_ids": ["doc_004", "doc_010"],
+    "relevant_doc_ids": ["doc_004", "doc_009"],
     "category": "reranking"
   },
   {

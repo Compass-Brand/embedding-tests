@@ -114,9 +114,12 @@ class ExperimentRunner:
             metrics: dict[str, Any] = {}
             for qr in rag_result.query_results:
                 relevant = set(qr.relevant_doc_ids)
-                r10 = recall_at_k(qr.retrieved_doc_ids, relevant, k=10)
-                p10 = precision_at_k(qr.retrieved_doc_ids, relevant, k=10)
-                metrics[qr.query_id] = {"recall_at_10": r10, "precision_at_10": p10}
+                r_k = recall_at_k(qr.retrieved_doc_ids, relevant, k=self._top_k)
+                p_k = precision_at_k(qr.retrieved_doc_ids, relevant, k=self._top_k)
+                metrics[qr.query_id] = {
+                    f"recall_at_{self._top_k}": r_k,
+                    f"precision_at_{self._top_k}": p_k,
+                }
 
             result = {
                 "model": name,

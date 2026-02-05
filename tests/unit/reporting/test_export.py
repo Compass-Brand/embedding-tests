@@ -31,6 +31,9 @@ class TestExportJSON:
         assert isinstance(data, list)
         assert len(data) == 2
         assert "model_name" in data[0]
+        assert data[0]["model_name"] == "m1"
+        assert data[0]["recall_at_10"] == 0.8
+        assert data[1]["model_name"] == "m2"
 
 
 class TestExportCSV:
@@ -57,5 +60,7 @@ class TestExportMarkdown:
         output = tmp_path / "results.md"
         export_markdown(sample_results, output)
         content = output.read_text()
-        assert "|" in content  # Markdown table uses pipes
-        assert "model_name" in content
+        lines = content.strip().split("\n")
+        assert len(lines) == 4  # header + separator + 2 data rows
+        assert "---" in lines[1]
+        assert "model_name" in lines[0]

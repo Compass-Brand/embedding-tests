@@ -11,6 +11,8 @@ def recall_at_k(
     k: int,
 ) -> float:
     """Compute Recall@k: fraction of relevant docs in top-k results."""
+    if k <= 0:
+        raise ValueError(f"k must be positive, got {k}")
     if not relevant:
         return 0.0
     top_k = retrieved[:k]
@@ -24,6 +26,8 @@ def precision_at_k(
     k: int,
 ) -> float:
     """Compute Precision@k: fraction of top-k results that are relevant."""
+    if k <= 0:
+        raise ValueError(f"k must be positive, got {k}")
     top_k = retrieved[:k]
     if not top_k:
         return 0.0
@@ -62,6 +66,8 @@ def ndcg_at_k(
         relevance: Mapping of doc_id to relevance score.
         k: Number of results to consider.
     """
+    if k <= 0:
+        raise ValueError(f"k must be positive, got {k}")
     top_k = retrieved[:k]
 
     # DCG

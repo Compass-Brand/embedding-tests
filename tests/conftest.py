@@ -22,7 +22,7 @@ def sample_corpus(fixtures_dir: Path) -> list[dict[str, Any]]:
     corpus_path = fixtures_dir / "sample_corpus.json"
     if not corpus_path.exists():
         pytest.fail(f"Missing test fixture: {corpus_path}")
-    with open(corpus_path) as f:
+    with open(corpus_path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -34,7 +34,7 @@ def sample_queries(fixtures_dir: Path) -> list[dict[str, Any]]:
     queries_path = fixtures_dir / "sample_queries.json"
     if not queries_path.exists():
         pytest.fail(f"Missing test fixture: {queries_path}")
-    with open(queries_path) as f:
+    with open(queries_path, encoding="utf-8") as f:
         return json.load(f)
 
 

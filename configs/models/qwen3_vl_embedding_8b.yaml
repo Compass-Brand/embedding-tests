@@ -9,3 +9,4 @@ supported_precisions:
 trust_remote_code: true
 query_instruction: null
 max_seq_length: 32768
+padding_side: left

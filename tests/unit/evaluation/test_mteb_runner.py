@@ -33,6 +33,16 @@ class TestMTEBModelAdapter:
         call_kwargs = mock_model.encode.call_args.kwargs
         assert call_kwargs.get("is_query") is True
 
+    def test_mteb_model_adapter_encodes_corpus(self) -> None:
+        mock_model = MagicMock()
+        mock_model.encode.return_value = np.array([[0.1, 0.2], [0.3, 0.4]])
+        adapter = MTEBModelAdapter(mock_model)
+        corpus = [{"text": "doc one"}, {"title": "doc two"}]
+        adapter.encode_corpus(corpus)
+        call_args = mock_model.encode.call_args
+        assert call_args.args[0] == ["doc one", "doc two"]
+        assert call_args.kwargs.get("is_query") is False
+
 
 class TestRunMTEBTasks:
     """Tests for MTEB task runner."""

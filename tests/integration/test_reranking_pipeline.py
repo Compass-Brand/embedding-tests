@@ -42,7 +42,7 @@ class TestRerankingPipeline:
 
             # The relevant docs (indices 1, 3) should rank higher
             top_indices = {r[0] for r in results}
-            assert 1 in top_indices or 3 in top_indices
+            assert 1 in top_indices and 3 in top_indices, f"Expected both 1 and 3 in {top_indices}"
 
         finally:
             reranker.unload()

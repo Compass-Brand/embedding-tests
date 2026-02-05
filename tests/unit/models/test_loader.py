@@ -67,3 +67,11 @@ class TestModelLoader:
         load_model(config, fp16_precision)
         # Precision config passed as positional arg
         assert mock_st.call_args.args[1] == fp16_precision
+
+    def test_loader_raises_for_unsupported_model_type(
+        self, fp16_precision: PrecisionConfig
+    ) -> None:
+        config = _make_config(ModelType.TEXT_EMBEDDING)
+        object.__setattr__(config, "model_type", "unsupported")
+        with pytest.raises(ValueError, match="Unsupported model type"):
+            load_model(config, fp16_precision)

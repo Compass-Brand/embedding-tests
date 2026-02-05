@@ -50,3 +50,12 @@ class TestResultsCollector:
         filtered = collector.filter_by_precision("int8")
         assert len(filtered) == 1
         assert filtered[0].precision == "int8"
+
+    def test_empty_collector_returns_empty_list(self) -> None:
+        collector = ResultsCollector()
+        assert collector.results == []
+        assert collector.filter_by_model("nonexistent") == []
+
+    def test_model_result_with_error(self) -> None:
+        result = ModelResult(model_name="test-model", precision="fp16", recall_at_10=0.0, mrr=0.0, ndcg_at_10=0.0, precision_at_10=0.0, total_time_seconds=0.0, error="Model failed to load")
+        assert result.error == "Model failed to load"

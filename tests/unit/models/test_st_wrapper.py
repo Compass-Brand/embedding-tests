@@ -155,6 +155,7 @@ class TestSTWrapper:
     ) -> None:
         from embedding_tests.models.st_wrapper import SentenceTransformerWrapper
 
+        mock_torch.cuda.is_available.return_value = True
         wrapper = SentenceTransformerWrapper(model_config, fp16_precision)
         wrapper.unload()
         mock_torch.cuda.empty_cache.assert_called_once()

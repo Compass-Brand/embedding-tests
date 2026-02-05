@@ -43,7 +43,7 @@ emb-test run configs/experiments/quick_sanity.yaml
 | Model | Params |
 |---|---|
 | Qwen3-VL-Reranker-2B | 2B |
-| Qwen3-VL-Reranker-8B | 9B |
+| Qwen3-VL-Reranker-8B | 8B |
 
 ## Experiment Presets
 

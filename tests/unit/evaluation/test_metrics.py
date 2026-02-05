@@ -81,6 +81,12 @@ class TestNDCG:
         score = ndcg_at_k(retrieved, relevance, k=2)
         assert score == 0.0
 
+    def test_ndcg_graded_relevance(self) -> None:
+        retrieved = ["d2", "d1", "d3"]
+        relevance = {"d1": 3.0, "d2": 1.0, "d3": 0.0}
+        score = ndcg_at_k(retrieved, relevance, k=3)
+        assert 0.0 < score < 1.0
+
 
 class TestPrecisionAtK:
     """Tests for Precision@k."""

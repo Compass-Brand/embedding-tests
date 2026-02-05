@@ -23,9 +23,14 @@ class VLEmbeddingWrapper:
         self._precision = precision
         self._embedding_dim = config.embedding_dim
 
-        if not hasattr(torch, precision.storage_dtype):
+        _QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
+
+        if precision.storage_dtype in _QUANTIZED_DTYPES:
+            dtype = torch.float16
+        elif hasattr(torch, precision.storage_dtype):
+            dtype = getattr(torch, precision.storage_dtype)
+        else:
             raise ValueError(f"Invalid storage dtype: {precision.storage_dtype}")
-        dtype = getattr(torch, precision.storage_dtype)
 
         load_kwargs: dict[str, object] = {
             "torch_dtype": dtype,

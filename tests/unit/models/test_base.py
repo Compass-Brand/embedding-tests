@@ -37,7 +37,8 @@ class MockRerankerModel:
         *,
         top_k: int = 10,
     ) -> list[tuple[int, float]]:
-        return [(0, 0.9), (1, 0.5)]
+        results = [(i, 0.9 - i * 0.1) for i in range(len(documents))]
+        return results[:top_k]
 
     def unload(self) -> None:
         pass

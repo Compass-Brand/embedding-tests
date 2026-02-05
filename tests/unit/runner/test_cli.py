@@ -19,7 +19,7 @@ class TestCLI:
         result = runner.invoke(app, ["list"])
         assert result.exit_code == 0
         # Should list available models
-        assert "model" in result.stdout.lower()
+        assert "qwen" in result.stdout.lower() or "embedding" in result.stdout.lower()
 
     @patch("embedding_tests.runner.cli.ExperimentRunner")
     @patch("embedding_tests.runner.cli.load_experiment_config")

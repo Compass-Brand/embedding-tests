@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -13,6 +14,8 @@ from embedding_tests.pipeline.chunking import ChunkingStrategy, chunk_text
 from embedding_tests.pipeline.embedding import batch_embed
 from embedding_tests.pipeline.reranking import rerank_results
 from embedding_tests.pipeline.retrieval import VectorStore
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -67,6 +70,20 @@ class RagPipeline:
         """Run the full RAG pipeline."""
         start = time.perf_counter()
 
+        # Validate corpus documents
+        for i, doc in enumerate(corpus):
+            if "text" not in doc or "doc_id" not in doc:
+                raise ValueError(
+                    f"Corpus document at index {i} missing required 'text' or 'doc_id' key"
+                )
+
+        # Validate query documents
+        for i, q in enumerate(queries):
+            if "text" not in q:
+                raise ValueError(
+                    f"Query document at index {i} missing required 'text' key"
+                )
+
         # 1. Chunk the corpus
         all_chunks: list[dict[str, str]] = []
         for doc in corpus:
@@ -97,6 +114,12 @@ class RagPipeline:
         chunk_ids = [f"{c['doc_id']}_chunk_{c['chunk_index']}" for c in all_chunks]
         store.index(embed_result.embeddings, chunk_ids)
 
+        # Build chunk_lookup once outside the query loop
+        chunk_lookup = {
+            f"{c['doc_id']}_chunk_{c['chunk_index']}": c
+            for c in all_chunks
+        }
+
         # 4. Query and retrieve
         query_results: list[QueryResult] = []
         for q in queries:
@@ -110,16 +133,18 @@ class RagPipeline:
 
             # 5. Optional reranking
             if self._reranker is not None:
-                # Build lookup from chunk_id to chunk data
-                chunk_lookup = {
-                    f"{c['doc_id']}_chunk_{c['chunk_index']}": c
-                    for c in all_chunks
-                }
-                retrieved_docs = [
-                    {"doc_id": chunk_lookup[r.doc_id]["doc_id"], "text": chunk_lookup[r.doc_id]["text"]}
-                    for r in retrieved
-                    if r.doc_id in chunk_lookup
-                ]
+                retrieved_docs: list[dict[str, str]] = []
+                for r in retrieved:
+                    if r.doc_id in chunk_lookup:
+                        retrieved_docs.append({
+                            "doc_id": chunk_lookup[r.doc_id]["doc_id"],
+                            "text": chunk_lookup[r.doc_id]["text"],
+                        })
+                    else:
+                        logger.warning(
+                            "Chunk ID '%s' not found in chunk_lookup, skipping",
+                            r.doc_id,
+                        )
                 if retrieved_docs:
                     reranked = rerank_results(
                         q["text"], retrieved_docs, self._reranker,

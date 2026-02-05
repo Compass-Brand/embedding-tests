@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def get_checkpoint_path(
@@ -53,6 +56,7 @@ def load_checkpoint(
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError:
+        logger.warning("Corrupted checkpoint file: %s", path)
         return None
 
 

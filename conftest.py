@@ -20,6 +20,7 @@ def _gpu_is_usable() -> bool:
         # Verify the GPU is actually usable by attempting a small tensor op
         t = torch.zeros(1, device="cuda")
         del t
+        torch.cuda.empty_cache()
         return True
     except (RuntimeError, AssertionError):
         return False

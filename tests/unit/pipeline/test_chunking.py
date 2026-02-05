@@ -24,11 +24,11 @@ class TestChunkText:
         text = "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five. " * 10
         chunks = chunk_text(text, strategy=ChunkingStrategy.RECURSIVE, chunk_size=100, chunk_overlap=20)
         if len(chunks) > 1:
-            # Check overlap exists between adjacent chunks
+            # Check overlap exists between adjacent chunks via substring match
             for i in range(len(chunks) - 1):
-                overlap = set(chunks[i].text[-30:]) & set(chunks[i + 1].text[:30])
-                # Some character overlap should exist
-                assert len(overlap) > 0
+                suffix = chunks[i].text[-20:]
+                prefix = chunks[i + 1].text[:40]
+                assert any(suffix[j:] in prefix for j in range(len(suffix)))
 
     def test_sentence_chunking_splits_on_sentence_boundaries(self) -> None:
         text = "First sentence. Second sentence. Third sentence. Fourth sentence. Fifth sentence."
@@ -64,3 +64,13 @@ class TestChunkText:
             assert chunk.source_doc_id == "doc_001"
             assert chunk.chunk_index == i
             assert len(chunk.text) > 0
+
+    def test_empty_text_returns_empty_list(self) -> None:
+        chunks = chunk_text("", strategy=ChunkingStrategy.RECURSIVE, chunk_size=100)
+        assert chunks == []
+
+    def test_short_text_returns_single_chunk(self) -> None:
+        text = "Short text."
+        chunks = chunk_text(text, strategy=ChunkingStrategy.RECURSIVE, chunk_size=100)
+        assert len(chunks) == 1
+        assert chunks[0].text == text

@@ -67,3 +67,16 @@ class TestCheckpoint:
         assert "my-model" in path.name
         assert "int8" in path.name
         assert path.suffix == ".json"
+
+    def test_load_checkpoint_returns_none_for_corrupted_file(self, tmp_path: Path) -> None:
+        cp_path = tmp_path / "checkpoints"
+        cp_path.mkdir(parents=True, exist_ok=True)
+        path = get_checkpoint_path(cp_path, "test-model", "fp16")
+        path.write_text("not valid json {{{")
+        loaded = load_checkpoint(cp_path, model_name="test-model", precision="fp16")
+        assert loaded is None
+
+    def test_is_completed_returns_false_for_in_progress(self, tmp_path: Path) -> None:
+        cp_path = tmp_path / "checkpoints"
+        save_checkpoint(checkpoint_dir=cp_path, model_name="m1", precision="fp16", status="in_progress", results={})
+        assert is_completed(cp_path, "m1", "fp16") is False
