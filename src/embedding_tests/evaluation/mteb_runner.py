@@ -11,6 +11,28 @@ from embedding_tests.models.base import EmbeddingModel
 
 logger = logging.getLogger(__name__)
 
+# MTEB task types for filtering benchmarks
+MTEB_TASK_TYPES: list[str] = [
+    "BitextMining",
+    "Classification",
+    "Clustering",
+    "MultilabelClassification",
+    "PairClassification",
+    "Reranking",
+    "Retrieval",
+    "STS",
+    "Summarization",
+]
+
+# Recommended small retrieval tasks for quick evaluation
+# These are fast to run and provide good signal for embedding quality
+RECOMMENDED_RETRIEVAL_TASKS: list[str] = [
+    "NFCorpus",  # Medical/nutrition (3.6K docs, 323 queries)
+    "SciFact",  # Scientific fact verification (5K docs, 300 queries)
+    "FiQA2018",  # Financial QA (57K docs, 648 queries)
+    "ArguAna",  # Argument retrieval (8.6K docs, 1.4K queries)
+]
+
 
 class MTEBModelAdapter:
     """Adapts our EmbeddingModel to the MTEB model interface."""
@@ -104,3 +126,39 @@ def run_mteb_tasks(
     except ImportError:
         logger.warning("MTEB not installed, skipping benchmark")
         return {"tasks": [], "error": "mteb not installed"}
+
+
+def format_mteb_results(raw_results: list[Any]) -> dict[str, dict[str, float]]:
+    """Format MTEB results into a structured dictionary.
+
+    Args:
+        raw_results: List of MTEB TaskResult objects.
+
+    Returns:
+        Dict mapping task_name -> {metric_name: score}.
+        Extracts common metrics like ndcg_at_10, mrr_at_10, etc.
+    """
+    if not raw_results:
+        return {}
+
+    formatted: dict[str, dict[str, float]] = {}
+
+    for result in raw_results:
+        task_name = result.task_name
+        scores = result.scores
+
+        # MTEB scores are nested: {"test": [{metric: value, ...}]}
+        # We extract the first score dict from the test split
+        metrics: dict[str, float] = {}
+
+        for split_name, split_scores in scores.items():
+            if split_scores and isinstance(split_scores, list):
+                score_dict = split_scores[0]
+                for metric_name, value in score_dict.items():
+                    if isinstance(value, (int, float)):
+                        metrics[metric_name] = float(value)
+
+        if metrics:
+            formatted[task_name] = metrics
+
+    return formatted

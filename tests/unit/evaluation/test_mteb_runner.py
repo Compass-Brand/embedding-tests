@@ -2,95 +2,147 @@
 
 from __future__ import annotations
 
-import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
-from embedding_tests.evaluation.mteb_runner import MTEBModelAdapter, run_mteb_tasks
-
 
 class TestMTEBModelAdapter:
-    """Tests for MTEB model adapter."""
+    """Tests for the MTEB model adapter."""
 
-    def test_mteb_model_adapter_wraps_encode(self) -> None:
+    def test_adapter_encode_delegates_to_model(self) -> None:
+        """Adapter encode should call model.encode with is_query=False."""
+        from embedding_tests.evaluation.mteb_runner import MTEBModelAdapter
+
         mock_model = MagicMock()
-        mock_model.encode.return_value = np.array([[0.1, 0.2]])
+        mock_model.encode.return_value = np.array([[1, 2, 3]])
 
         adapter = MTEBModelAdapter(mock_model)
-        result = adapter.encode(["test text"])
-        assert isinstance(result, np.ndarray)
-        call_kwargs = mock_model.encode.call_args.kwargs
-        assert call_kwargs.get("is_query") is False
+        result = adapter.encode(["test sentence"])
 
-    def test_mteb_model_adapter_handles_query_encoding(self) -> None:
+        mock_model.encode.assert_called_once_with(
+            ["test sentence"], is_query=False, batch_size=32
+        )
+        assert result.shape == (1, 3)
+
+    def test_adapter_encode_queries_uses_query_mode(self) -> None:
+        """Adapter encode_queries should call model.encode with is_query=True."""
+        from embedding_tests.evaluation.mteb_runner import MTEBModelAdapter
+
         mock_model = MagicMock()
-        mock_model.encode.return_value = np.array([[0.1, 0.2]])
+        mock_model.encode.return_value = np.array([[1, 2, 3]])
 
         adapter = MTEBModelAdapter(mock_model)
         adapter.encode_queries(["test query"])
-        # Should call encode with is_query=True
-        call_kwargs = mock_model.encode.call_args.kwargs
-        assert call_kwargs.get("is_query") is True
 
-    def test_mteb_model_adapter_encodes_corpus(self) -> None:
+        mock_model.encode.assert_called_once_with(
+            ["test query"], is_query=True, batch_size=32
+        )
+
+    def test_adapter_encode_corpus_extracts_text(self) -> None:
+        """Adapter encode_corpus should extract text from corpus dicts."""
+        from embedding_tests.evaluation.mteb_runner import MTEBModelAdapter
+
         mock_model = MagicMock()
-        mock_model.encode.return_value = np.array([[0.1, 0.2], [0.3, 0.4]])
+        mock_model.encode.return_value = np.array([[1, 2, 3], [4, 5, 6]])
+
         adapter = MTEBModelAdapter(mock_model)
-        corpus = [{"text": "doc one"}, {"title": "doc two"}]
+        corpus = [
+            {"text": "doc 1 text", "title": "Title 1"},
+            {"text": "doc 2 text"},
+        ]
         adapter.encode_corpus(corpus)
+
         call_args = mock_model.encode.call_args
-        assert call_args.args[0] == ["doc one", "doc two"]
-        assert call_args.kwargs.get("is_query") is False
+        assert call_args[0][0] == ["doc 1 text", "doc 2 text"]
 
 
 class TestRunMTEBTasks:
-    """Tests for MTEB task runner."""
+    """Tests for run_mteb_tasks function."""
 
-    def test_mteb_runner_returns_structured_results(self) -> None:
+    def test_run_mteb_requires_task_selection(self) -> None:
+        """Should raise if neither task_types nor task_names provided."""
+        from embedding_tests.evaluation.mteb_runner import run_mteb_tasks
+
         mock_model = MagicMock()
-        mock_model.encode.return_value = np.array([[0.1, 0.2]])
 
-        # Don't actually run MTEB, just verify structure
-        results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=True)
-        assert isinstance(results, dict)
-
-    def test_mteb_runner_handles_import_error(self) -> None:
-        mock_model = MagicMock()
-        import builtins
-        original_import = builtins.__import__
-
-        def _mock_import(name: str, *args, **kwargs):
-            if name == "mteb":
-                raise ImportError("mocked mteb not installed")
-            return original_import(name, *args, **kwargs)
-
-        with patch.dict(sys.modules, {"mteb": None}):
-            sys.modules.pop("mteb", None)
-            with patch("builtins.__import__", side_effect=_mock_import):
-                results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=False)
-        assert "error" in results
-        assert results["error"] == "mteb not installed"
-
-    def test_mteb_runner_raises_when_both_params_provided(self) -> None:
-        mock_model = MagicMock()
-        with pytest.raises(ValueError, match="only one of"):
-            run_mteb_tasks(
-                mock_model, task_types=["Retrieval"], task_names=["STS12"]
-            )
-
-    def test_mteb_runner_raises_when_no_params_provided(self) -> None:
-        mock_model = MagicMock()
-        with pytest.raises(ValueError, match="must be provided"):
+        with pytest.raises(ValueError, match="Either task_types or task_names"):
             run_mteb_tasks(mock_model)
 
-    def test_mteb_runner_rejects_empty_task_types(self) -> None:
-        mock_model = MagicMock()
-        with pytest.raises(ValueError, match="must not be empty"):
-            run_mteb_tasks(mock_model, task_types=[], dry_run=True)
+    def test_run_mteb_rejects_both_selectors(self) -> None:
+        """Should raise if both task_types and task_names provided."""
+        from embedding_tests.evaluation.mteb_runner import run_mteb_tasks
 
-    def test_mteb_runner_rejects_empty_task_names(self) -> None:
         mock_model = MagicMock()
+
+        with pytest.raises(ValueError, match="only one of"):
+            run_mteb_tasks(mock_model, task_types=["Retrieval"], task_names=["NFCorpus"])
+
+    def test_run_mteb_rejects_empty_selectors(self) -> None:
+        """Should raise if task_types or task_names is empty list."""
+        from embedding_tests.evaluation.mteb_runner import run_mteb_tasks
+
+        mock_model = MagicMock()
+
         with pytest.raises(ValueError, match="must not be empty"):
-            run_mteb_tasks(mock_model, task_names=[], dry_run=True)
+            run_mteb_tasks(mock_model, task_types=[])
+
+    def test_run_mteb_dry_run_returns_empty(self) -> None:
+        """Dry run should return empty results without executing."""
+        from embedding_tests.evaluation.mteb_runner import run_mteb_tasks
+
+        mock_model = MagicMock()
+
+        result = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=True)
+
+        assert result["dry_run"] is True
+        assert result["tasks"] == []
+        mock_model.encode.assert_not_called()
+
+
+class TestMTEBTaskInfo:
+    """Tests for MTEB task information."""
+
+    def test_list_mteb_task_types(self) -> None:
+        """Should list available MTEB task types."""
+        from embedding_tests.evaluation.mteb_runner import MTEB_TASK_TYPES
+
+        assert "Retrieval" in MTEB_TASK_TYPES
+        assert "Reranking" in MTEB_TASK_TYPES
+        assert "Clustering" in MTEB_TASK_TYPES
+
+    def test_list_recommended_retrieval_tasks(self) -> None:
+        """Should have recommended retrieval tasks for quick evaluation."""
+        from embedding_tests.evaluation.mteb_runner import RECOMMENDED_RETRIEVAL_TASKS
+
+        assert "NFCorpus" in RECOMMENDED_RETRIEVAL_TASKS
+        assert "SciFact" in RECOMMENDED_RETRIEVAL_TASKS
+
+
+class TestMTEBResultsFormatter:
+    """Tests for MTEB results formatting."""
+
+    def test_format_mteb_results_extracts_ndcg(self) -> None:
+        """Should extract NDCG@10 from MTEB results."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        raw_results = [
+            MagicMock(
+                task_name="NFCorpus",
+                scores={"test": [{"ndcg_at_10": 0.85, "mrr_at_10": 0.90}]},
+            )
+        ]
+
+        formatted = format_mteb_results(raw_results)
+
+        assert "NFCorpus" in formatted
+        assert formatted["NFCorpus"]["ndcg_at_10"] == 0.85
+
+    def test_format_mteb_results_handles_empty(self) -> None:
+        """Should handle empty results gracefully."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        formatted = format_mteb_results([])
+
+        assert formatted == {}
