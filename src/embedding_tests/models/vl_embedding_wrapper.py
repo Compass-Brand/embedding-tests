@@ -67,6 +67,8 @@ class VLEmbeddingWrapper:
 
         if is_query and self._config.query_instruction:
             texts = [f"{self._config.query_instruction}{t}" for t in texts]
+        elif not is_query and self._config.document_instruction:
+            texts = [f"{self._config.document_instruction}{t}" for t in texts]
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]

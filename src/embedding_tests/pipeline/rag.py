@@ -56,15 +56,6 @@ class RagPipeline:
         chunking_strategy: ChunkingStrategy = ChunkingStrategy.RECURSIVE,
         embed_batch_size: int = 32,
     ) -> None:
-        self._embedding_model = embedding_model
-        self._reranker = reranker_model
-        self._chunk_size = chunk_size
-        self._chunk_overlap = chunk_overlap
-        self._top_k = top_k
-        self._reranker_top_k = reranker_top_k
-        self._strategy = chunking_strategy
-        self._embed_batch_size = embed_batch_size
-
         if chunk_size <= 0:
             raise ValueError("chunk_size must be positive")
         if chunk_overlap < 0:
@@ -77,6 +68,15 @@ class RagPipeline:
             raise ValueError("reranker_top_k must be positive")
         if embed_batch_size <= 0:
             raise ValueError("embed_batch_size must be positive")
+
+        self._embedding_model = embedding_model
+        self._reranker = reranker_model
+        self._chunk_size = chunk_size
+        self._chunk_overlap = chunk_overlap
+        self._top_k = top_k
+        self._reranker_top_k = reranker_top_k
+        self._strategy = chunking_strategy
+        self._embed_batch_size = embed_batch_size
 
     def run(
         self,
@@ -146,7 +146,14 @@ class RagPipeline:
             total_query_embed_time += q_embed.total_time_seconds
             retrieved = store.query(q_embed.embeddings[0], top_k=self._top_k)
 
-            retrieved_doc_ids = [_CHUNK_SUFFIX_RE.sub("", r.doc_id) for r in retrieved]
+            # Deduplicate doc IDs after stripping chunk suffixes, preserving order
+            seen: set[str] = set()
+            retrieved_doc_ids: list[str] = []
+            for r in retrieved:
+                doc_id = _CHUNK_SUFFIX_RE.sub("", r.doc_id)
+                if doc_id not in seen:
+                    seen.add(doc_id)
+                    retrieved_doc_ids.append(doc_id)
             scores = [r.score for r in retrieved]
 
             # 5. Optional reranking

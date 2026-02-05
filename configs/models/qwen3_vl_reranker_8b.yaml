@@ -6,4 +6,5 @@ embedding_dim: 0
 supported_precisions:
   - fp16
   - int8
+  - int4
 trust_remote_code: true

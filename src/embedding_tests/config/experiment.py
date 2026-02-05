@@ -33,11 +33,11 @@ class ExperimentConfig:
 
     name: str
     description: str
-    models: list[ModelConfig]
-    precisions: list[PrecisionLevel]
+    models: tuple[ModelConfig, ...]
+    precisions: tuple[PrecisionLevel, ...]
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
     reranker: str | None = None
-    datasets: list[str] = field(default_factory=list)
+    datasets: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "models", tuple(self.models))

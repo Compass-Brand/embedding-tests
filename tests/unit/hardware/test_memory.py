@@ -13,23 +13,31 @@ class TestEstimateVram:
 
     def test_estimate_vram_fp16_8b_model(self) -> None:
         vram = estimate_vram_gb(params_billions=8.0, precision=PrecisionLevel.FP16)
-        assert vram == pytest.approx(16.0, rel=0.1)
+        assert vram == 16.0
 
     def test_estimate_vram_int8_8b_model(self) -> None:
         vram = estimate_vram_gb(params_billions=8.0, precision=PrecisionLevel.INT8)
-        assert vram == pytest.approx(8.0, rel=0.1)
+        assert vram == 8.0
 
     def test_estimate_vram_int4_8b_model(self) -> None:
         vram = estimate_vram_gb(params_billions=8.0, precision=PrecisionLevel.INT4)
-        assert vram == pytest.approx(4.0, rel=0.1)
+        assert vram == 4.0
 
     def test_estimate_vram_fp16_small_model(self) -> None:
         vram = estimate_vram_gb(params_billions=0.6, precision=PrecisionLevel.FP16)
-        assert vram == pytest.approx(1.2, rel=0.1)
+        assert vram == 1.2
 
     def test_estimate_vram_fp16_12b_model(self) -> None:
         vram = estimate_vram_gb(params_billions=11.76, precision=PrecisionLevel.FP16)
-        assert vram == pytest.approx(23.52, rel=0.1)
+        assert vram == 23.52
+
+    def test_estimate_vram_gptq_int4_8b_model(self) -> None:
+        vram = estimate_vram_gb(params_billions=8.0, precision=PrecisionLevel.GPTQ_INT4)
+        assert vram == 4.0
+
+    def test_estimate_vram_awq_int4_8b_model(self) -> None:
+        vram = estimate_vram_gb(params_billions=8.0, precision=PrecisionLevel.AWQ_INT4)
+        assert vram == 4.0
 
 
 class TestWillModelFit:

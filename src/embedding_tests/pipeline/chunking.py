@@ -33,7 +33,15 @@ def chunk_text(
     chunk_overlap: int = 50,
     source_doc_id: str = "",
 ) -> list[ChunkMetadata]:
-    """Split text into chunks using the specified strategy."""
+    """Split text into chunks using the specified strategy.
+
+    For the TOKEN strategy, ``chunk_size`` and ``chunk_overlap`` are measured
+    in word counts (using ``str.split()``) rather than character counts.
+    """
+    if chunk_overlap >= chunk_size:
+        raise ValueError(
+            f"chunk_overlap ({chunk_overlap}) must be less than chunk_size ({chunk_size})"
+        )
     if strategy == ChunkingStrategy.RECURSIVE:
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,

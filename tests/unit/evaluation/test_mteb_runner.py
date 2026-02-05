@@ -16,7 +16,6 @@ class TestMTEBModelAdapter:
     def test_mteb_model_adapter_wraps_encode(self) -> None:
         mock_model = MagicMock()
         mock_model.encode.return_value = np.array([[0.1, 0.2]])
-        mock_model.get_embedding_dim.return_value = 2
 
         adapter = MTEBModelAdapter(mock_model)
         result = adapter.encode(["test text"])
@@ -27,7 +26,6 @@ class TestMTEBModelAdapter:
     def test_mteb_model_adapter_handles_query_encoding(self) -> None:
         mock_model = MagicMock()
         mock_model.encode.return_value = np.array([[0.1, 0.2]])
-        mock_model.get_embedding_dim.return_value = 2
 
         adapter = MTEBModelAdapter(mock_model)
         adapter.encode_queries(["test query"])
@@ -52,7 +50,6 @@ class TestRunMTEBTasks:
     def test_mteb_runner_returns_structured_results(self) -> None:
         mock_model = MagicMock()
         mock_model.encode.return_value = np.array([[0.1, 0.2]])
-        mock_model.get_embedding_dim.return_value = 2
 
         # Don't actually run MTEB, just verify structure
         results = run_mteb_tasks(mock_model, task_types=[], dry_run=True)

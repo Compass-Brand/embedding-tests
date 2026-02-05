@@ -64,7 +64,7 @@ class TestEmbeddingPipeline:
                 results = store.query(q_embed.embeddings[0], top_k=5)
                 assert len(results) > 0
                 # Check if any relevant doc appears in results
-                retrieved_docs = {r.doc_id.rsplit("_", 1)[0] for r in results}
+                retrieved_docs = {r.doc_id.rpartition("_")[0] for r in results}
                 relevant = set(q["relevant_doc_ids"])
                 recall = len(retrieved_docs & relevant) / len(relevant) if relevant else 0
                 # At least some recall expected with small corpus

@@ -7,7 +7,11 @@ def compute_context_recall(
     retrieved: list[str],
     relevant: list[str],
 ) -> float:
-    """Compute context recall: fraction of relevant docs found in retrieved."""
+    """Compute context recall: fraction of relevant docs found in retrieved.
+
+    Returns 0.0 when ``relevant`` is empty, since there are no relevant
+    documents to recall.
+    """
     if not relevant:
         return 0.0
     relevant_set = set(relevant)

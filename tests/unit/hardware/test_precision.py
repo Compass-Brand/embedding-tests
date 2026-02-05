@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+import torch
 
 from embedding_tests.config.hardware import GpuCapabilities
 from embedding_tests.config.models import PrecisionLevel
@@ -59,8 +60,7 @@ class TestPrecisionConfigP40:
         config = get_precision_config(p40_caps, PrecisionLevel.INT4)
         assert config.quantization_config is not None
         assert config.quantization_config["load_in_4bit"] is True
-        assert config.quantization_config["bnb_4bit_compute_dtype"] == "float32"
-
+        assert config.quantization_config["bnb_4bit_compute_dtype"] == torch.float32
 
     def test_gptq_int4_quantization_config(self, p40_caps: GpuCapabilities) -> None:
         config = get_precision_config(p40_caps, PrecisionLevel.GPTQ_INT4)

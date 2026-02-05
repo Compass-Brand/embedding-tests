@@ -89,7 +89,10 @@ class TestNDCG:
         retrieved = ["d2", "d1", "d3"]
         relevance = {"d1": 3.0, "d2": 1.0, "d3": 0.0}
         score = ndcg_at_k(retrieved, relevance, k=3)
-        assert 0.0 < score < 1.0
+        # DCG  = 1.0/log2(2) + 3.0/log2(3) + 0.0/log2(4) ≈ 2.893
+        # IDCG = 3.0/log2(2) + 1.0/log2(3) + 0.0/log2(4) ≈ 3.631
+        # NDCG ≈ 0.797
+        assert score == pytest.approx(0.797, abs=0.001)
 
     def test_ndcg_invalid_k_raises(self) -> None:
         with pytest.raises(ValueError, match="k must be positive"):

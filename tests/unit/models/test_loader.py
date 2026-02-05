@@ -63,7 +63,9 @@ class TestModelLoader:
         self, fp16_precision: PrecisionConfig
     ) -> None:
         config = MagicMock(spec=ModelConfig)
-        config.model_type = "unsupported"
+        unsupported_type = MagicMock()
+        unsupported_type.value = "unsupported"
+        config.model_type = unsupported_type
         config.name = "test"
         with pytest.raises(ValueError, match="Unsupported model type"):
             load_model(config, fp16_precision)

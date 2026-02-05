@@ -72,6 +72,10 @@ class TestModelLoading:
             # ML-related docs should score higher
             scores = [r[1] for r in results]
             assert scores == sorted(scores, reverse=True)
+            # Verify semantic relevance: ML-related documents (indices 0, 2)
+            # should appear in top results over the irrelevant document (index 1)
+            top_indices = {r[0] for r in results}
+            assert top_indices & {0, 2}, f"Expected ML-related docs in top results, got indices {top_indices}"
         finally:
             model.unload()
             torch.cuda.empty_cache()

@@ -9,7 +9,7 @@ import pytest
 import torch
 
 from embedding_tests.config.hardware import GpuCapabilities
-from embedding_tests.config.models import PrecisionLevel, load_model_config
+from embedding_tests.config.models import load_model_config
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 
@@ -24,7 +24,7 @@ class TestRerankingPipeline:
         """Verify reranker properly scores query-document relevance."""
 
         config = load_model_config(configs_dir / "models" / "qwen3_vl_reranker_2b.yaml")
-        precision = get_precision_config(gpu, PrecisionLevel.FP16)
+        precision = get_precision_config(gpu, config.supported_precisions[0])
         reranker = load_model(config, precision)
 
         try:

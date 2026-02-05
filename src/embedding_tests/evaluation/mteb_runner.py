@@ -77,6 +77,8 @@ def run_mteb_tasks(
     """
     if task_types is not None and task_names is not None:
         raise ValueError("Provide only one of task_types or task_names")
+    if task_types is None and task_names is None:
+        raise ValueError("Either task_types or task_names must be provided")
 
     if dry_run:
         return {"tasks": [], "dry_run": True}
@@ -93,6 +95,7 @@ def run_mteb_tasks(
             tasks = mteb.get_tasks(task_types=task_types)
 
         evaluation = mteb.MTEB(tasks=tasks)
+        # adapter wraps our model to satisfy MTEB's expected interface
         results = evaluation.run(adapter, output_folder=None)
 
         return {"tasks": [str(t) for t in tasks], "results": results}

@@ -3,7 +3,7 @@ model_id: tencent/KaLM-Embedding-Gemma3-12B-2511
 model_type: text_embedding
 params_billions: 11.76
 embedding_dim: 3840
-supported_precisions:
+supported_precisions:  # fp16 excluded: 12B at FP16 = ~23.5GB, exceeds P40's practical VRAM with safety margin
   - int8
   - int4
 trust_remote_code: true

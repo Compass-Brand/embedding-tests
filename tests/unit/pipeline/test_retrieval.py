@@ -8,6 +8,42 @@ import pytest
 from embedding_tests.pipeline.retrieval import VectorStore
 
 
+@pytest.fixture(autouse=True)
+def _cleanup_stores():
+    """Ensure ChromaDB stores are cleaned up after each test."""
+    stores: list[VectorStore] = []
+    original_init = VectorStore.__init__
+
+    def tracking_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        stores.append(self)
+
+    VectorStore.__init__ = tracking_init
+    yield
+    VectorStore.__init__ = original_init
+    for store in stores:
+        try:
+            store.clear()
+        except Exception:
+            pass
+
+
+class TestDistanceToScore:
+    """Tests for _distance_to_score conversion."""
+
+    def test_cosine_distance_zero_returns_one(self) -> None:
+        store = VectorStore(collection_name="test_d2s_zero", embedding_dim=2, metric="cosine")
+        assert store._distance_to_score(0.0) == 1.0
+
+    def test_cosine_distance_two_returns_zero(self) -> None:
+        store = VectorStore(collection_name="test_d2s_two", embedding_dim=2, metric="cosine")
+        assert store._distance_to_score(2.0) == 0.0
+
+    def test_cosine_distance_one_returns_half(self) -> None:
+        store = VectorStore(collection_name="test_d2s_one", embedding_dim=2, metric="cosine")
+        assert store._distance_to_score(1.0) == 0.5
+
+
 class TestVectorStore:
     """Tests for VectorStore."""
 

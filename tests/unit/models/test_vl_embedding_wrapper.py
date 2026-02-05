@@ -101,6 +101,7 @@ class TestVLEmbeddingWrapper:
         result = wrapper.encode(["hello", "world"])
         assert isinstance(result, np.ndarray)
         assert result.shape[0] == 2  # Two input texts
+        assert result.shape[1] == 2  # Matches mock hidden state dim
 
     @patch("embedding_tests.models.vl_embedding_wrapper.torch")
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoTokenizer")

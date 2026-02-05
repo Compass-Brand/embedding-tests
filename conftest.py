@@ -25,7 +25,7 @@ def _gpu_is_usable() -> bool:
         del t
         torch.cuda.empty_cache()
         return True
-    except (RuntimeError, AssertionError):
+    except Exception:  # broad catch: driver mismatch, OOM, etc.
         return False
 
 

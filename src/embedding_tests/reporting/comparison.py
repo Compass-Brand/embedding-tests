@@ -32,7 +32,8 @@ def cross_model_comparison(
         }
         rows.append(row)
 
-    rows.sort(key=lambda x: x[metric], reverse=True)
+    ascending_metrics = {"time_seconds"}
+    rows.sort(key=lambda x: x[metric], reverse=(metric not in ascending_metrics))
     return rows
 
 

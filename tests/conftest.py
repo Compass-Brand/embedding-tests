@@ -8,13 +8,13 @@ from typing import Any
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def fixtures_dir() -> Path:
     """Return path to the test fixtures directory."""
     return Path(__file__).parent / "fixtures"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_corpus(fixtures_dir: Path) -> list[dict[str, Any]]:
     """Load sample corpus from fixtures."""
     import json
@@ -26,7 +26,7 @@ def sample_corpus(fixtures_dir: Path) -> list[dict[str, Any]]:
         return json.load(f)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_queries(fixtures_dir: Path) -> list[dict[str, Any]]:
     """Load sample queries with ground truth from fixtures."""
     import json

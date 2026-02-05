@@ -19,7 +19,7 @@ def load_model(
     precision: PrecisionConfig,
 ) -> EmbeddingModel | RerankerModel:
     """Load a model based on its type, dispatching to the correct wrapper."""
-    model_type_str = config.model_type.value if isinstance(config.model_type, ModelType) else str(config.model_type)
+    model_type_str = config.model_type.value
     logger.debug(
         "Loading model %s (%s) with precision %s",
         config.name,

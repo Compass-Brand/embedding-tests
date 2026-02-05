@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -49,6 +50,25 @@ class TestExportCSV:
         header = lines[0]
         assert "model_name" in header
         assert "recall_at_10" in header
+
+    def test_export_csv_data_content_matches_results(
+        self, sample_results: list[ModelResult], tmp_path: Path
+    ) -> None:
+        output = tmp_path / "results.csv"
+        export_csv(sample_results, output)
+        with open(output, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+        assert len(rows) == 2
+        assert rows[0]["model_name"] == "m1"
+        assert rows[0]["precision"] == "fp16"
+        assert float(rows[0]["recall_at_10"]) == 0.8
+        assert float(rows[0]["mrr"]) == 0.7
+        assert float(rows[0]["ndcg_at_10"]) == 0.75
+        assert float(rows[0]["precision_at_10"]) == 0.6
+        assert float(rows[0]["total_time_seconds"]) == 10.0
+        assert rows[1]["model_name"] == "m2"
+        assert float(rows[1]["recall_at_10"]) == 0.9
 
 
 class TestExportMarkdown:

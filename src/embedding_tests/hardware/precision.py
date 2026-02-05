@@ -40,6 +40,8 @@ def get_precision_config(
         )
 
     if precision == PrecisionLevel.INT4:
+        import torch
+
         return PrecisionConfig(
             storage_dtype="int4",
             compute_dtype=compute_dtype,
@@ -47,7 +49,7 @@ def get_precision_config(
             use_autocast=False,
             quantization_config={
                 "load_in_4bit": True,
-                "bnb_4bit_compute_dtype": compute_dtype,
+                "bnb_4bit_compute_dtype": getattr(torch, compute_dtype),
                 "bnb_4bit_quant_type": "nf4",
             },
         )

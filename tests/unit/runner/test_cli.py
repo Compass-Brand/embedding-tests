@@ -16,10 +16,14 @@ class TestCLI:
     """Tests for CLI commands."""
 
     def test_cli_list_command_shows_models(self) -> None:
-        result = runner.invoke(app, ["list"])
+        from rich.console import Console
+
+        wide_console = Console(width=200)
+        with patch("embedding_tests.runner.cli.console", wide_console):
+            result = runner.invoke(app, ["list"])
         assert result.exit_code == 0
-        # Should list available models - check for specific model name
-        assert "qwen3-embeddin" in result.stdout.lower()
+        # Should list available models - check for full model name
+        assert "qwen3-embedding-8b" in result.stdout.lower()
 
     @patch("embedding_tests.runner.cli.ExperimentRunner")
     @patch("embedding_tests.runner.cli.load_experiment_config")

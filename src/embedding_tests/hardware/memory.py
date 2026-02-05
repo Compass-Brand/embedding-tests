@@ -35,6 +35,11 @@ def will_model_fit(
     available_vram_gb: float,
     safety_margin_gb: float = 2.0,
 ) -> bool:
-    """Check if a model will fit in available VRAM with safety margin."""
+    """Check if a model will fit in available VRAM with safety margin.
+
+    The default ``safety_margin_gb`` of 2.0 GB accounts for CUDA context
+    overhead and activation memory. Increase this for models with large
+    intermediate activations or when running alongside other GPU workloads.
+    """
     estimated = estimate_vram_gb(params_billions, precision)
     return (estimated + safety_margin_gb) <= available_vram_gb

@@ -97,6 +97,9 @@ def load_model_config(path: Path) -> ModelConfig:
 def load_all_model_configs(models_dir: Path) -> list[ModelConfig]:
     """Load all model configs from a directory of YAML files."""
     configs: list[ModelConfig] = []
-    for yaml_file in sorted(models_dir.glob("*.yaml")):
+    yaml_files = sorted(
+        set(models_dir.glob("*.yaml")) | set(models_dir.glob("*.yml"))
+    )
+    for yaml_file in yaml_files:
         configs.append(load_model_config(yaml_file))
     return configs

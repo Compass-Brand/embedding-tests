@@ -62,12 +62,12 @@ class TestVLRerankerWrapper:
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
-        import torch
-
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
         mock_model = MagicMock()
-        mock_model.device = torch.device("cpu")
+        # Mock parameters() for device detection via next(model.parameters()).device
+        cpu_param = torch.zeros(1, device="cpu")
+        mock_model.parameters.return_value = iter([cpu_param])
         # Batch call returns logits for all query-doc pairs at once
         mock_output = MagicMock()
         mock_output.logits = torch.tensor([[0.9], [0.3], [0.7]])
@@ -101,12 +101,12 @@ class TestVLRerankerWrapper:
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
-        import torch
-
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
         mock_model = MagicMock()
-        mock_model.device = torch.device("cpu")
+        # Mock parameters() for device detection via next(model.parameters()).device
+        cpu_param = torch.zeros(1, device="cpu")
+        mock_model.parameters.return_value = iter([cpu_param])
         # Batch call returns logits for all query-doc pairs at once
         mock_output = MagicMock()
         mock_output.logits = torch.tensor([[0.9], [0.3], [0.7], [0.5], [0.1]])
@@ -156,3 +156,18 @@ class TestVLRerankerWrapper:
 
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         assert isinstance(wrapper, RerankerModel)
+
+    @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
+    @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
+    def test_vl_reranker_rerank_handles_empty_documents(
+        self,
+        mock_auto_model: MagicMock,
+        mock_tokenizer: MagicMock,
+        reranker_config: ModelConfig,
+        fp16_precision: PrecisionConfig,
+    ) -> None:
+        from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
+
+        wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
+        results = wrapper.rerank("query", [])
+        assert results == []

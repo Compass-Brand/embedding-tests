@@ -13,6 +13,8 @@ from embedding_tests.hardware.precision import PrecisionConfig
 
 logger = logging.getLogger(__name__)
 
+_QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
+
 
 class VLRerankerWrapper:
     """Wrapper for Qwen3-VL reranker models using transformers directly."""
@@ -21,9 +23,12 @@ class VLRerankerWrapper:
         self._config = config
         self._precision = precision
 
-        if not hasattr(torch, precision.storage_dtype):
+        if precision.storage_dtype in _QUANTIZED_DTYPES:
+            dtype = torch.float16
+        elif hasattr(torch, precision.storage_dtype):
+            dtype = getattr(torch, precision.storage_dtype)
+        else:
             raise ValueError(f"Invalid storage dtype: {precision.storage_dtype}")
-        dtype = getattr(torch, precision.storage_dtype)
 
         load_kwargs: dict[str, object] = {
             "torch_dtype": dtype,
@@ -55,6 +60,9 @@ class VLRerankerWrapper:
         top_k: int = 10,
     ) -> list[tuple[int, float]]:
         """Rerank documents by relevance to query."""
+        if not documents:
+            return []
+
         inputs = self._tokenizer(
             [query] * len(documents),
             documents,
@@ -62,7 +70,8 @@ class VLRerankerWrapper:
             truncation=True,
             return_tensors="pt",
         )
-        inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
+        device = next(self._model.parameters()).device
+        inputs = {k: v.to(device) for k, v in inputs.items()}
 
         with torch.no_grad():
             outputs = self._model(**inputs)

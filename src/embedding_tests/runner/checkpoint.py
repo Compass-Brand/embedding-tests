@@ -40,7 +40,7 @@ def save_checkpoint(
     try:
         path.write_text(json.dumps(data, indent=2))
     except OSError as e:
-        raise IOError(f"Failed to save checkpoint to {path}: {e}") from e
+        raise OSError(f"Failed to save checkpoint to {path}: {e}") from e
     return path
 
 

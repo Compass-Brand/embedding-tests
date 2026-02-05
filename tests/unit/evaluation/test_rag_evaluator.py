@@ -37,6 +37,13 @@ class TestContextRecall:
     def test_context_recall_both_empty(self) -> None:
         assert compute_context_recall([], []) == 0.0
 
+    def test_context_recall_with_duplicates(self) -> None:
+        """Verify duplicates in retrieved are deduplicated via set conversion."""
+        retrieved = ["d1", "d1", "d2"]
+        relevant = ["d1", "d2"]
+        # set(retrieved) = {"d1", "d2"}, intersection = {"d1", "d2"} -> 2/2 = 1.0
+        assert compute_context_recall(retrieved, relevant) == 1.0
+
 
 class TestContextPrecision:
     """Tests for context precision computation."""
