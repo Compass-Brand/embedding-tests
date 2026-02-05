@@ -65,3 +65,15 @@ class TestSetSubmoduleCompat:
         parent.set_submodule("child", child)
 
         assert parent.child is child
+
+    def test_set_submodule_raises_on_invalid_path(self) -> None:
+        """set_submodule should raise AttributeError for invalid paths."""
+        import pytest
+
+        from embedding_tests.hardware import compat  # noqa: F401
+
+        parent = torch.nn.Module()
+        child = torch.nn.Linear(10, 5)
+
+        with pytest.raises(AttributeError):
+            parent.set_submodule("nonexistent.fc", child)
