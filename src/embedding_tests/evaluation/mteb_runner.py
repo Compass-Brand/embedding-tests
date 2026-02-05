@@ -144,8 +144,10 @@ def format_mteb_results(raw_results: list[Any]) -> dict[str, dict[str, float]]:
     formatted: dict[str, dict[str, float]] = {}
 
     for result in raw_results:
-        task_name = result.task_name
-        scores = result.scores
+        task_name = getattr(result, "task_name", None)
+        scores = getattr(result, "scores", None)
+        if task_name is None or not isinstance(scores, dict):
+            continue
 
         # MTEB scores are nested: {"test": [{metric: value, ...}]}
         # We prefer the "test" split; fall back to first available split.

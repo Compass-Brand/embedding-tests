@@ -269,3 +269,37 @@ class TestMTEBResultsFormatter:
 
         # Should not crash, just return empty metrics for this task
         assert formatted == {}
+
+    def test_format_mteb_results_does_not_fallback_for_empty_test_split(self) -> None:
+        """Should not fall back to other splits when 'test' exists but is empty."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        raw_results = [
+            MagicMock(
+                task_name="NFCorpus",
+                scores={"test": [], "dev": [{"ndcg_at_10": 0.80}]},
+            )
+        ]
+
+        formatted = format_mteb_results(raw_results)
+
+        # Empty test split means no metrics extracted, no fallback to dev
+        assert formatted == {}
+
+    def test_format_mteb_results_skips_malformed_entries(self) -> None:
+        """Should skip entries missing task_name or scores attributes."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        raw_results = [
+            MagicMock(spec=[]),  # No attributes at all
+            MagicMock(
+                task_name="NFCorpus",
+                scores={"test": [{"ndcg_at_10": 0.85}]},
+            ),
+        ]
+
+        formatted = format_mteb_results(raw_results)
+
+        # Should only include the valid entry
+        assert len(formatted) == 1
+        assert "NFCorpus" in formatted
