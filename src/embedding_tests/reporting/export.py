@@ -55,13 +55,17 @@ def export_markdown(results: list[ModelResult], output_path: Path) -> None:
         "| " + separator + " |",
     ]
     for r in results:
-        row = [
-            r.model_name, r.precision,
-            f"{r.recall_at_10:.4f}", f"{r.mrr:.4f}",
-            f"{r.ndcg_at_10:.4f}", f"{r.precision_at_10:.4f}",
-            f"{r.total_time_seconds:.2f}",
-            r.error or "",
-        ]
-        lines.append("| " + " | ".join(row) + " |")
+        values = []
+        for f in _FIELDS:
+            val = getattr(r, f)
+            if f in ("recall_at_10", "mrr", "ndcg_at_10", "precision_at_10"):
+                values.append(f"{val:.4f}")
+            elif f == "total_time_seconds":
+                values.append(f"{val:.2f}")
+            elif f == "error":
+                values.append(val or "")
+            else:
+                values.append(str(val))
+        lines.append("| " + " | ".join(values) + " |")
 
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -28,8 +28,10 @@ class TestFullRAG:
     def test_full_rag_pipeline_with_small_models(
         self, gpu: GpuCapabilities, configs_dir, sample_corpus, sample_queries
     ) -> None:
-        """Run complete RAG pipeline with Qwen3-Embedding-0.6B."""
+        """Run complete RAG pipeline with Qwen3-Embedding-0.6B.
 
+        Uses small chunk size and top_k for faster test execution.
+        """
         embed_config = load_model_config(configs_dir / "models" / "qwen3_embedding_06b.yaml")
         precision = get_precision_config(gpu, PrecisionLevel.FP16)
         embed_model = load_model(embed_config, precision)

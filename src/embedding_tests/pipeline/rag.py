@@ -140,7 +140,7 @@ class RagPipeline:
             # 4. Query and retrieve
             total_query_embed_time = 0.0
             query_results: list[QueryResult] = []
-            for q in queries:
+            for q_idx, q in enumerate(queries):
                 q_embed = batch_embed(
                     self._embedding_model, [q["text"]], batch_size=1, is_query=True
                 )
@@ -184,7 +184,7 @@ class RagPipeline:
                             scores.append(r.score)
 
                 query_results.append(QueryResult(
-                    query_id=q.get("query_id", ""),
+                    query_id=q.get("query_id", f"query_{q_idx}"),
                     query_text=q["text"],
                     retrieved_doc_ids=retrieved_doc_ids,
                     scores=scores,

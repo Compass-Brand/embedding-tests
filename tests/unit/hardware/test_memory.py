@@ -101,3 +101,4 @@ class TestWillModelFit:
     def test_will_model_fit_raises_for_negative_margin(self) -> None:
         with pytest.raises(ValueError, match="non-negative"):
             will_model_fit(params_billions=8.0, precision=PrecisionLevel.FP16, available_vram_gb=24.0, safety_margin_gb=-1.0)
+

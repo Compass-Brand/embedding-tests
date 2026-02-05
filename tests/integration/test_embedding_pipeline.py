@@ -31,9 +31,9 @@ class TestEmbeddingPipeline:
         precision = get_precision_config(gpu, PrecisionLevel.FP16)
         store = None
         model = None
-        model = load_model(config, precision)
 
         try:
+            model = load_model(config, precision)
             # Chunk corpus
             all_chunks = []
             chunk_ids = []

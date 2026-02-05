@@ -54,7 +54,7 @@ def run(
 @app.command(name="list")
 def list_models() -> None:
     """List available models."""
-    if not MODELS_DIR.exists():
+    if not MODELS_DIR.is_dir():
         console.print("[yellow]No model configs found[/yellow]")
         raise typer.Exit(0)
 

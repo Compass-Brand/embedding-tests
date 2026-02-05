@@ -84,7 +84,8 @@ class ExperimentRunner:
                     "status": checkpoint.get("status"),
                     "results": checkpoint.get("results"),
                 }
-            return {"model": name, "precision": prec, "status": "skipped", "results": None}
+            logger.warning("Checkpoint marked complete but data missing for %s/%s", name, prec)
+            return {"model": name, "precision": prec, "status": "completed_missing_data", "results": None}
 
         logger.info("Running %s at %s precision", name, prec)
 

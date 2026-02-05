@@ -87,6 +87,10 @@ def load_model_config(path: Path) -> ModelConfig:
             raise ValueError(f"Unknown precision: {p!r}. Valid: {sorted(_VALID_PRECISIONS)}")
         precisions.append(PrecisionLevel(p))
 
+    extra_kwargs = data.get("extra_kwargs", {})
+    if not isinstance(extra_kwargs, dict):
+        raise ValueError(f"extra_kwargs must be a dict in {path}, got {type(extra_kwargs).__name__}")
+
     return ModelConfig(
         name=data["name"],
         model_id=data["model_id"],
@@ -99,7 +103,7 @@ def load_model_config(path: Path) -> ModelConfig:
         document_instruction=data.get("document_instruction"),
         max_seq_length=data.get("max_seq_length"),
         padding_side=data.get("padding_side"),
-        extra_kwargs=data.get("extra_kwargs", {}),
+        extra_kwargs=extra_kwargs,
     )
 
 

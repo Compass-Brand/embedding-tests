@@ -43,6 +43,8 @@ class TestCheckpoint:
         )
         loaded = load_checkpoint(cp_path, model_name="test-model", precision="fp16")
         assert loaded is not None
+        assert loaded["model_name"] == "test-model"
+        assert loaded["precision"] == "fp16"
         assert loaded["status"] == "completed"
         assert loaded["results"]["score"] == 0.9
 

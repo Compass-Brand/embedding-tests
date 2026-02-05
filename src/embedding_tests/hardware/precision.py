@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import torch
+
 from embedding_tests.config.hardware import GpuCapabilities
 from embedding_tests.config.models import PrecisionLevel
 
@@ -40,13 +42,6 @@ def get_precision_config(
         )
 
     if precision == PrecisionLevel.INT4:
-        try:
-            import torch
-        except ImportError as exc:
-            raise ImportError(
-                "PyTorch is required for INT4 quantization but is not installed"
-            ) from exc
-
         return PrecisionConfig(
             storage_dtype="int4",
             compute_dtype=compute_dtype,
