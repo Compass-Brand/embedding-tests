@@ -122,11 +122,25 @@ class TestRAGEvaluationSample:
 
         sample = RAGEvaluationSample(
             question="Q1",
-            contexts=["doc1", "doc2"],
+            contexts=["Context text 1", "Context text 2"],
             answer="A1",
             relevant_doc_ids=["doc1", "doc3"],
         )
         assert sample.relevant_doc_ids == ["doc1", "doc3"]
+
+    def test_rag_sample_retrieved_doc_ids(self) -> None:
+        """Should support retrieved_doc_ids separate from contexts."""
+        from embedding_tests.evaluation.rag_evaluator import RAGEvaluationSample
+
+        sample = RAGEvaluationSample(
+            question="Q1",
+            contexts=["Context text 1", "Context text 2"],
+            answer="A1",
+            relevant_doc_ids=["doc1", "doc3"],
+            retrieved_doc_ids=["doc1", "doc2"],
+        )
+        assert sample.retrieved_doc_ids == ["doc1", "doc2"]
+        assert sample.contexts == ["Context text 1", "Context text 2"]
 
 
 class TestRAGEvaluator:
@@ -142,9 +156,10 @@ class TestRAGEvaluator:
         samples = [
             RAGEvaluationSample(
                 question="What is X?",
-                contexts=["doc1", "doc2"],
+                contexts=["Context text 1", "Context text 2"],
                 answer="Answer",
                 relevant_doc_ids=["doc1", "doc3"],
+                retrieved_doc_ids=["doc1", "doc2"],
             )
         ]
         evaluator = RAGEvaluator()
@@ -167,15 +182,17 @@ class TestRAGEvaluator:
         samples = [
             RAGEvaluationSample(
                 question="Q1",
-                contexts=["doc1"],
+                contexts=["Context 1"],
                 answer="A1",
                 relevant_doc_ids=["doc1"],
+                retrieved_doc_ids=["doc1"],
             ),
             RAGEvaluationSample(
                 question="Q2",
-                contexts=["doc2", "doc3"],
+                contexts=["Context 2", "Context 3"],
                 answer="A2",
                 relevant_doc_ids=["doc2"],
+                retrieved_doc_ids=["doc2", "doc3"],
             ),
         ]
         evaluator = RAGEvaluator()
@@ -206,15 +223,17 @@ class TestRAGEvaluator:
         samples = [
             RAGEvaluationSample(
                 question="Q1",
-                contexts=["doc1"],
+                contexts=["Context 1"],
                 answer="A1",
                 relevant_doc_ids=["doc1"],
+                retrieved_doc_ids=["doc1"],
             ),
             RAGEvaluationSample(
                 question="Q2",
-                contexts=["doc3"],
+                contexts=["Context 2"],
                 answer="A2",
                 relevant_doc_ids=["doc2"],
+                retrieved_doc_ids=["doc3"],
             ),
         ]
         evaluator = RAGEvaluator()
@@ -235,9 +254,10 @@ class TestRAGEvaluator:
         samples = [
             RAGEvaluationSample(
                 question="Q1",
-                contexts=["doc1"],
+                contexts=["Context 1"],
                 answer="A1",
                 relevant_doc_ids=["doc1"],
+                retrieved_doc_ids=["doc1"],
             ),
         ]
         evaluator = RAGEvaluator()
@@ -272,6 +292,7 @@ class TestRAGASMetrics:
                 contexts=["X is Y"],
                 answer="X is Y",
                 relevant_doc_ids=["doc1"],
+                retrieved_doc_ids=["doc1"],
             )
         ]
         evaluator = RAGEvaluator()  # No LLM

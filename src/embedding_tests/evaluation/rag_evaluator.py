@@ -18,13 +18,24 @@ RAGAS_METRICS: list[str] = [
 
 @dataclass
 class RAGEvaluationSample:
-    """A single sample for RAG evaluation."""
+    """A single sample for RAG evaluation.
+
+    Attributes:
+        question: The user query/question.
+        contexts: Retrieved text contexts (for LLM-based metrics like faithfulness).
+        answer: The generated answer.
+        ground_truth: Expected answer (for answer correctness metrics).
+        relevant_doc_ids: Set of ground-truth relevant document IDs.
+        retrieved_doc_ids: IDs of retrieved documents (for retrieval metrics).
+            If not provided, falls back to using contexts as doc IDs.
+    """
 
     question: str
     contexts: list[str]
     answer: str
     ground_truth: str | None = None
     relevant_doc_ids: list[str] = field(default_factory=list)
+    retrieved_doc_ids: list[str] = field(default_factory=list)
 
 
 class RAGEvaluator:
@@ -70,13 +81,16 @@ class RAGEvaluator:
         per_sample_scores: list[dict[str, float]] = []
         for sample in samples:
             sample_scores: dict[str, float] = {}
+            # Use retrieved_doc_ids for retrieval metrics if available,
+            # otherwise fall back to contexts (for backward compatibility)
+            retrieved = sample.retrieved_doc_ids or sample.contexts
             if "context_recall" in metrics:
                 sample_scores["context_recall"] = compute_context_recall(
-                    sample.contexts, sample.relevant_doc_ids
+                    retrieved, sample.relevant_doc_ids
                 )
             if "context_precision" in metrics:
                 sample_scores["context_precision"] = compute_context_precision(
-                    sample.contexts, sample.relevant_doc_ids
+                    retrieved, sample.relevant_doc_ids
                 )
             per_sample_scores.append(sample_scores)
 
