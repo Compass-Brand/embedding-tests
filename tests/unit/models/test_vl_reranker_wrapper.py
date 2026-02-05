@@ -65,6 +65,8 @@ class TestVLRerankerWrapper:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
         mock_model = MagicMock()
+        # Ensure hf_device_map falls through to parameters()-based detection
+        mock_model.hf_device_map = None
         # Mock parameters() for device detection via next(model.parameters()).device
         cpu_param = torch.zeros(1, device="cpu")
         mock_model.parameters.return_value = iter([cpu_param])
@@ -104,6 +106,8 @@ class TestVLRerankerWrapper:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
         mock_model = MagicMock()
+        # Ensure hf_device_map falls through to parameters()-based detection
+        mock_model.hf_device_map = None
         # Mock parameters() for device detection via next(model.parameters()).device
         cpu_param = torch.zeros(1, device="cpu")
         mock_model.parameters.return_value = iter([cpu_param])
@@ -126,23 +130,24 @@ class TestVLRerankerWrapper:
         scores = [r[1] for r in results]
         assert scores[0] >= scores[1]  # Still sorted
 
-    @patch("embedding_tests.models.vl_reranker_wrapper.torch")
+    @patch("embedding_tests.models.vl_reranker_wrapper.torch.cuda.empty_cache")
+    @patch("embedding_tests.models.vl_reranker_wrapper.torch.cuda.is_available", return_value=True)
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
     def test_vl_reranker_unload_clears_memory(
         self,
         mock_auto_model: MagicMock,
         mock_tokenizer: MagicMock,
-        mock_torch: MagicMock,
+        mock_is_available: MagicMock,
+        mock_empty_cache: MagicMock,
         reranker_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
-        mock_torch.cuda.is_available.return_value = True
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         wrapper.unload()
-        mock_torch.cuda.empty_cache.assert_called_once()
+        mock_empty_cache.assert_called_once()
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")

@@ -39,7 +39,7 @@ class ModelConfig:
     model_type: ModelType
     params_billions: float
     embedding_dim: int
-    supported_precisions: list[PrecisionLevel]
+    supported_precisions: tuple[PrecisionLevel, ...]
     trust_remote_code: bool = True
     query_instruction: str | None = None
     document_instruction: str | None = None
@@ -74,6 +74,11 @@ def load_model_config(path: Path) -> ModelConfig:
     if missing:
         raise ValueError(f"Missing required keys in {path}: {sorted(missing)}")
 
+    if not isinstance(data.get("params_billions"), (int, float)):
+        raise ValueError(f"params_billions must be numeric in {path}")
+    if not isinstance(data.get("embedding_dim"), int):
+        raise ValueError(f"embedding_dim must be an integer in {path}")
+
     model_type = ModelType(data["model_type"])
 
     precisions: list[PrecisionLevel] = []
@@ -88,7 +93,7 @@ def load_model_config(path: Path) -> ModelConfig:
         model_type=model_type,
         params_billions=data["params_billions"],
         embedding_dim=data["embedding_dim"],
-        supported_precisions=precisions,
+        supported_precisions=tuple(precisions),
         trust_remote_code=data.get("trust_remote_code", True),
         query_instruction=data.get("query_instruction"),
         document_instruction=data.get("document_instruction"),

@@ -86,3 +86,23 @@ class TestCheckpoint:
         assert "/" not in path.name
         assert ":" not in path.name
         assert path.suffix == ".json"
+
+    def test_save_checkpoint_raises_on_write_failure(self, tmp_path: Path) -> None:
+        """Test that OSError is raised when checkpoint write fails."""
+        from unittest.mock import patch
+
+        cp_path = tmp_path / "checkpoints"
+        cp_path.mkdir(parents=True)
+
+        with patch(
+            "embedding_tests.runner.checkpoint.tempfile.mkstemp",
+            side_effect=OSError("Disk full"),
+        ):
+            with pytest.raises(OSError, match="Failed to save checkpoint"):
+                save_checkpoint(
+                    checkpoint_dir=cp_path,
+                    model_name="test-model",
+                    precision="fp16",
+                    status="completed",
+                    results={},
+                )

@@ -23,7 +23,23 @@ class TestModelResult:
         assert result.model_name == "test-model"
         assert result.precision == "fp16"
         assert result.recall_at_10 == 0.85
+        assert result.mrr == 0.7
+        assert result.ndcg_at_10 == 0.75
+        assert result.precision_at_10 == 0.6
         assert result.total_time_seconds == 12.5
+
+    def test_model_result_is_immutable(self) -> None:
+        result = ModelResult(
+            model_name="test-model",
+            precision="fp16",
+            recall_at_10=0.85,
+            mrr=0.7,
+            ndcg_at_10=0.75,
+            precision_at_10=0.6,
+            total_time_seconds=12.5,
+        )
+        with pytest.raises(AttributeError):
+            result.recall_at_10 = 0.9
 
     def test_model_result_with_error(self) -> None:
         result = ModelResult(

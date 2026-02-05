@@ -41,6 +41,7 @@ def batch_embed(
     if all_embeddings:
         combined = np.concatenate(all_embeddings, axis=0)
     else:
+        # TODO: Consider inferring dtype from model output for consistency
         combined = np.empty((0, model.get_embedding_dim()), dtype=np.float32)
 
     return EmbeddingResult(

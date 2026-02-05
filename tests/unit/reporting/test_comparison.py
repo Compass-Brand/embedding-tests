@@ -49,6 +49,24 @@ class TestCrossModelComparison:
         table = precision_impact_table(results, model_name="nonexistent")
         assert table == []
 
+    def test_cross_model_comparison_excludes_error_results(self) -> None:
+        results = [
+            ModelResult("m1", "fp16", 0.8, 0.7, 0.75, 0.6, 10.0),
+            ModelResult("m2", "fp16", 0.0, 0.0, 0.0, 0.0, 0.0, error="Failed"),
+        ]
+        table = cross_model_comparison(results, metric="recall_at_10")
+        assert len(table) == 1
+        assert table[0]["model_name"] == "m1"
+
+    def test_precision_impact_table_excludes_error_results(self) -> None:
+        results = [
+            ModelResult("m1", "fp16", 0.8, 0.7, 0.75, 0.6, 10.0),
+            ModelResult("m1", "int8", 0.0, 0.0, 0.0, 0.0, 0.0, error="OOM"),
+        ]
+        table = precision_impact_table(results, model_name="m1")
+        assert len(table) == 1
+        assert table[0]["precision"] == "fp16"
+
     def test_cross_model_comparison_time_seconds_sorts_ascending(self) -> None:
         results = [
             ModelResult("fast", "fp16", 0.8, 0.7, 0.75, 0.6, 5.0),

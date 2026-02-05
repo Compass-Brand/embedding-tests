@@ -50,7 +50,8 @@ class MTEBModelAdapter:
         for i, doc in enumerate(corpus):
             text = doc.get("text") or doc.get("title") or ""
             if not text:
-                logger.warning("Corpus document %d has no 'text' or 'title' field", i)
+                logger.warning("Corpus document %d has no 'text' or 'title' field, skipping", i)
+                continue
             texts.append(text)
         return self._model.encode(texts, is_query=False, batch_size=batch_size)
 

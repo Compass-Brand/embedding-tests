@@ -41,5 +41,11 @@ def will_model_fit(
     overhead and activation memory. Increase this for models with large
     intermediate activations or when running alongside other GPU workloads.
     """
+    if params_billions < 0:
+        raise ValueError(f"params_billions must be non-negative, got {params_billions}")
+    if available_vram_gb < 0:
+        raise ValueError(f"available_vram_gb must be non-negative, got {available_vram_gb}")
+    if safety_margin_gb < 0:
+        raise ValueError(f"safety_margin_gb must be non-negative, got {safety_margin_gb}")
     estimated = estimate_vram_gb(params_billions, precision)
     return (estimated + safety_margin_gb) <= available_vram_gb

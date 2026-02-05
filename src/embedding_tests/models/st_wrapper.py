@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 _QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
 
+_TORCH_DTYPE_MAP: dict[str, "torch.dtype"] = {
+    "float16": torch.float16,
+    "bfloat16": torch.bfloat16,
+    "float32": torch.float32,
+}
+
 
 class SentenceTransformerWrapper:
     """Wrapper around sentence-transformers for hardware-aware loading."""
@@ -28,8 +34,8 @@ class SentenceTransformerWrapper:
         storage_dtype = precision.storage_dtype.lower()
         if storage_dtype in _QUANTIZED_DTYPES:
             torch_dtype = torch.float16
-        elif hasattr(torch, storage_dtype):
-            torch_dtype = getattr(torch, storage_dtype)
+        elif storage_dtype in _TORCH_DTYPE_MAP:
+            torch_dtype = _TORCH_DTYPE_MAP[storage_dtype]
         else:
             raise ValueError(f"Invalid storage dtype: {precision.storage_dtype}")
 

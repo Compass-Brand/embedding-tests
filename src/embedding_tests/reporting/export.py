@@ -14,6 +14,17 @@ _FIELDS = [
     "ndcg_at_10", "precision_at_10", "total_time_seconds", "error",
 ]
 
+_HEADER_LABELS: dict[str, str] = {
+    "model_name": "model_name",
+    "precision": "precision",
+    "recall_at_10": "recall@10",
+    "mrr": "MRR",
+    "ndcg_at_10": "NDCG@10",
+    "precision_at_10": "P@10",
+    "total_time_seconds": "time(s)",
+    "error": "error",
+}
+
 
 def export_json(results: list[ModelResult], output_path: Path) -> None:
     """Export results to JSON."""
@@ -36,7 +47,7 @@ def export_csv(results: list[ModelResult], output_path: Path) -> None:
 def export_markdown(results: list[ModelResult], output_path: Path) -> None:
     """Export results as a Markdown table."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    headers = ["model_name", "precision", "recall@10", "MRR", "NDCG@10", "P@10", "time(s)", "error"]
+    headers = [_HEADER_LABELS[f] for f in _FIELDS]
     separator = "|".join(["---"] * len(headers))
 
     lines = [

@@ -59,6 +59,7 @@ class TestEmbeddingPipeline:
             store.index(result.embeddings, chunk_ids)
 
             # Query
+            # Process first 2 queries for integration test speed
             for q in sample_queries[:2]:
                 q_embed = batch_embed(model, [q["text"]], batch_size=1, is_query=True)
                 results = store.query(q_embed.embeddings[0], top_k=5)
@@ -72,5 +73,6 @@ class TestEmbeddingPipeline:
                 assert recall > 0.0, f"Expected positive recall for query {q['text']!r}"
 
         finally:
+            store.clear()
             model.unload()
             torch.cuda.empty_cache()

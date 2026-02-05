@@ -40,6 +40,8 @@ def chunk_text(
     """
     if chunk_size <= 0:
         raise ValueError(f"chunk_size must be positive, got {chunk_size}")
+    if chunk_overlap < 0:
+        raise ValueError(f"chunk_overlap ({chunk_overlap}) must be non-negative")
     if chunk_overlap >= chunk_size:
         raise ValueError(
             f"chunk_overlap ({chunk_overlap}) must be less than chunk_size ({chunk_size})"
@@ -54,6 +56,7 @@ def chunk_text(
         case ChunkingStrategy.SENTENCE:
             splitter_kwargs["separators"] = [". ", "\n\n", "\n", " ", ""]
         case ChunkingStrategy.TOKEN:
+            # Word count is a rough proxy for tokens; for precise counting, integrate a model tokenizer
             splitter_kwargs["length_function"] = lambda t: len(t.split())
         case _:
             raise ValueError(f"Unknown chunking strategy: {strategy}")

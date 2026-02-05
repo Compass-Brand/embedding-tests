@@ -16,7 +16,10 @@ def cross_model_comparison(
     results: list[ModelResult],
     metric: str = "recall_at_10",
 ) -> list[dict[str, Any]]:
-    """Create a cross-model comparison table ranked by a metric."""
+    """Create a cross-model comparison table ranked by a metric.
+
+    Note: ModelResult.total_time_seconds is aliased to 'time_seconds' in output rows.
+    """
     if metric not in _VALID_METRICS:
         raise ValueError(f"Unknown metric: {metric!r}. Valid: {sorted(_VALID_METRICS)}")
     rows = []
@@ -43,7 +46,10 @@ def precision_impact_table(
     results: list[ModelResult],
     model_name: str,
 ) -> list[dict[str, Any]]:
-    """Show precision impact for a single model."""
+    """Show precision impact for a single model.
+
+    Note: ModelResult.total_time_seconds is aliased to 'time_seconds' in output rows.
+    """
     filtered = [r for r in results if r.model_name == model_name and not r.error]
     rows = []
     for r in filtered:

@@ -101,3 +101,16 @@ class TestRagPipeline:
         model = self._make_mock_model()
         with pytest.raises(ValueError, match="embed_batch_size must be positive"):
             RagPipeline(embedding_model=model, chunk_size=100, embed_batch_size=0)
+
+    def test_rag_pipeline_rejects_corpus_missing_doc_id(self) -> None:
+        pipeline = RagPipeline(embedding_model=self._make_mock_model(), chunk_size=100)
+        with pytest.raises(ValueError, match="missing required"):
+            pipeline.run([{"text": "content"}], [{"text": "query"}])
+
+    def test_rag_pipeline_rejects_query_missing_text(self) -> None:
+        pipeline = RagPipeline(embedding_model=self._make_mock_model(), chunk_size=100)
+        with pytest.raises(ValueError, match="missing required"):
+            pipeline.run(
+                [{"doc_id": "d0", "text": "content"}],
+                [{"query_id": "q1"}],
+            )

@@ -67,7 +67,11 @@ def load_experiment_config(
 
     # Load all available model configs
     all_models = load_all_model_configs(models_dir)
-    model_lookup = {m.name: m for m in all_models}
+    model_lookup: dict[str, ModelConfig] = {}
+    for m in all_models:
+        if m.name in model_lookup:
+            raise ValueError(f"Duplicate model config name: {m.name!r}")
+        model_lookup[m.name] = m
 
     # Resolve model references
     resolved_models: list[ModelConfig] = []

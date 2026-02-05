@@ -39,6 +39,13 @@ class TestExportJSON:
         assert data[2]["model_name"] == "m3"
         assert data[2]["error"] == "Model load failed"
 
+    def test_export_json_creates_nested_directories(
+        self, sample_results: list[ModelResult], tmp_path: Path
+    ) -> None:
+        output = tmp_path / "nested" / "dirs" / "results.json"
+        export_json(sample_results, output)
+        assert output.exists()
+
 
 class TestExportCSV:
     """Tests for CSV export."""

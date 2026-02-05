@@ -33,7 +33,12 @@ class VectorStore:
             )
         self._client = chromadb.Client()
         metadata = {"hnsw:space": metric}
-        self._collection = self._client.get_or_create_collection(
+        # Delete existing collection to ensure metric consistency
+        try:
+            self._client.delete_collection(name=collection_name)
+        except Exception:
+            pass
+        self._collection = self._client.create_collection(
             name=collection_name,
             metadata=metadata,
         )
@@ -91,8 +96,7 @@ class VectorStore:
         elif self._metric == "ip":
             dot = 1.0 - distance
             return max(0.0, min(1.0, (dot + 1.0) / 2.0))
-        else:
-            return 1.0 - distance
+        raise AssertionError(f"Unexpected metric: {self._metric}")
 
     def count(self) -> int:
         """Return number of documents in store."""

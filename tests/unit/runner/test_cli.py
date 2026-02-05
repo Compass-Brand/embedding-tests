@@ -41,6 +41,9 @@ class TestCLI:
 
         result = runner.invoke(app, ["run", "configs/experiments/quick_sanity.yaml"])
         assert result.exit_code == 0
+        mock_load.assert_called_once()
+        call_args = mock_load.call_args[0][0]
+        assert str(call_args).endswith("quick_sanity.yaml")
 
     def test_cli_report_command(self) -> None:
         result = runner.invoke(app, ["report", "--help"])

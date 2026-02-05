@@ -142,6 +142,7 @@ class ExperimentRunner:
 
         except Exception as e:
             logger.error("Failed %s/%s: %s", name, prec, e, exc_info=True)
+            save_checkpoint(self._checkpoint_dir, name, prec, "failed", {"error": str(e)})
             return {"model": name, "precision": prec, "error": str(e)}
 
         finally:

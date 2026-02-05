@@ -71,3 +71,10 @@ class TestReranking:
         mock_reranker.rerank.return_value = []
         results = rerank_results("query", [], mock_reranker, top_k=1)
         assert results == []
+
+    def test_rerank_raises_on_invalid_reranker_index(self) -> None:
+        mock_reranker = MagicMock()
+        mock_reranker.rerank.return_value = [(5, 0.9)]  # out of bounds
+        docs = [{"doc_id": "d1", "text": "content"}]
+        with pytest.raises((ValueError, IndexError)):
+            rerank_results("query", docs, mock_reranker, top_k=1)

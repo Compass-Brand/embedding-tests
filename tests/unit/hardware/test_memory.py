@@ -40,6 +40,14 @@ class TestEstimateVram:
         assert vram == 4.0
 
 
+    def test_estimate_vram_raises_for_unsupported_precision(self) -> None:
+        from unittest.mock import MagicMock
+
+        fake_precision = MagicMock()
+        with pytest.raises((ValueError, KeyError)):
+            estimate_vram_gb(params_billions=8.0, precision=fake_precision)
+
+
 class TestWillModelFit:
     """Tests for model fit checking."""
 

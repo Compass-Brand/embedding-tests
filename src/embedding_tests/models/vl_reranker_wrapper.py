@@ -75,7 +75,11 @@ class VLRerankerWrapper:
             max_length=self._config.max_seq_length,
             return_tensors="pt",
         )
-        device = next(self._model.parameters()).device
+        if hasattr(self._model, 'hf_device_map') and self._model.hf_device_map:
+            first_device = next(iter(self._model.hf_device_map.values()))
+            device = torch.device(first_device) if isinstance(first_device, str) else first_device
+        else:
+            device = next(self._model.parameters()).device
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
         orig_training = self._model.training
