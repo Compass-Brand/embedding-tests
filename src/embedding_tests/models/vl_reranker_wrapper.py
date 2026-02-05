@@ -91,9 +91,9 @@ class VLRerankerWrapper:
             self._score_linear.weight[0] = lm_weights[token_yes] - lm_weights[token_no]
         self._score_linear.eval()
 
-        device = next(self._model.parameters()).device
+        self._device = next(self._model.parameters()).device
         self._score_linear = self._score_linear.to(
-            device=device, dtype=self._model.dtype
+            device=self._device, dtype=self._model.dtype
         )
 
         # Free the full model (LM head, tied embeddings, etc.)
@@ -136,6 +136,7 @@ class VLRerankerWrapper:
         self._model = None
         self._score_linear = None
         self._tokenizer = None
+        self._device = None
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -157,8 +158,7 @@ class VLRerankerWrapper:
             truncation=True,
             max_length=max_length,
         )
-        device = next(self._model.parameters()).device
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        inputs = {k: v.to(self._device) for k, v in inputs.items()}
 
         outputs = self._model(**inputs)
         last_hidden = outputs.last_hidden_state[:, -1]

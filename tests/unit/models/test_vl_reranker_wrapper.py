@@ -227,6 +227,47 @@ class TestVLRerankerWrapper:
         with pytest.raises(ValueError, match="top_k must be positive"):
             wrapper.rerank("query", ["doc1"], top_k=0)
 
+    @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
+    @patch(
+        "embedding_tests.models.vl_reranker_wrapper.Qwen3VLForConditionalGeneration"
+    )
+    def test_score_single_tensor_flow(
+        self,
+        mock_gen_cls: MagicMock,
+        mock_tok_cls: MagicMock,
+        reranker_config: ModelConfig,
+        fp16_precision: PrecisionConfig,
+    ) -> None:
+        """Verify _score_single applies the linear scorer and sigmoid."""
+        from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
+
+        hidden_dim = 16
+        mock_gen_cls.from_pretrained.return_value = _mock_lm(hidden_dim=hidden_dim)
+
+        mock_tok = _mock_tokenizer()
+        mock_tok.apply_chat_template.return_value = ["formatted text"]
+        mock_tok.return_value = {
+            "input_ids": torch.tensor([[1, 2, 3]]),
+            "attention_mask": torch.tensor([[1, 1, 1]]),
+        }
+        mock_tok_cls.from_pretrained.return_value = mock_tok
+
+        wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
+
+        # Mock the base model to return a known hidden state
+        mock_output = MagicMock()
+        # Shape: (batch=1, seq_len=3, hidden_dim)
+        mock_output.last_hidden_state = torch.randn(1, 3, hidden_dim, dtype=torch.float16)
+        wrapper._model = MagicMock(return_value=mock_output)
+        wrapper._model.parameters = lambda: iter([torch.zeros(1, device="cpu")])
+        wrapper._device = torch.device("cpu")
+
+        messages = VLRerankerWrapper._build_messages("inst", "query", "doc")
+        score = wrapper._score_single(messages, max_length=512)
+
+        assert isinstance(score, float)
+        assert 0.0 <= score <= 1.0  # sigmoid output range
+
     def test_build_messages_format(self) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
