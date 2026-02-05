@@ -193,7 +193,7 @@ class TestBEIRDatasetLoader:
 
         # Text should not start with newlines when title is empty
         assert corpus[0]["text"] == "Just text"
-        assert not corpus[1]["text"].startswith("\n")
+        assert corpus[1]["text"] == "More text"
 
     @patch("datasets.load_dataset")
     def test_load_beir_handles_qrels_failure(self, mock_load: MagicMock) -> None:
@@ -203,11 +203,7 @@ class TestBEIRDatasetLoader:
         mock_corpus = [{"_id": "doc1", "title": "", "text": "Text"}]
         mock_queries = [{"_id": "q1", "text": "Query"}]
 
-        call_count = 0
-
         def side_effect(name, *args, **kwargs):
-            nonlocal call_count
-            call_count += 1
             if "qrels" in args:
                 raise ValueError("Failed to load qrels")
             return {"corpus": mock_corpus, "queries": mock_queries}
