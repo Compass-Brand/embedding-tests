@@ -62,17 +62,15 @@ class TestPrecisionConfigP40:
         assert config.quantization_config["bnb_4bit_compute_dtype"] == "float32"
 
 
-    def test_gptq_int4_quantization_config(self) -> None:
-        gpu = GpuCapabilities(device_name="Tesla P40", compute_capability=(6, 1), total_vram_gb=24.0, supports_bf16=False, supports_flash_attn2=False)
-        config = get_precision_config(gpu, PrecisionLevel.GPTQ_INT4)
+    def test_gptq_int4_quantization_config(self, p40_caps: GpuCapabilities) -> None:
+        config = get_precision_config(p40_caps, PrecisionLevel.GPTQ_INT4)
         assert config.quantization_config is not None
         assert config.quantization_config.get("load_in_4bit") is None
         assert config.quantization_config.get("bits") == 4
         assert config.quantization_config.get("backend") == "gptq"
 
-    def test_awq_int4_quantization_config(self) -> None:
-        gpu = GpuCapabilities(device_name="Tesla P40", compute_capability=(6, 1), total_vram_gb=24.0, supports_bf16=False, supports_flash_attn2=False)
-        config = get_precision_config(gpu, PrecisionLevel.AWQ_INT4)
+    def test_awq_int4_quantization_config(self, p40_caps: GpuCapabilities) -> None:
+        config = get_precision_config(p40_caps, PrecisionLevel.AWQ_INT4)
         assert config.quantization_config is not None
         assert config.quantization_config.get("load_in_4bit") is None
         assert config.quantization_config.get("bits") == 4

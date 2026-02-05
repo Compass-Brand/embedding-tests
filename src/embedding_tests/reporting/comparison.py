@@ -9,6 +9,8 @@ from embedding_tests.reporting.collector import ModelResult
 
 _VALID_METRICS = {"recall_at_10", "mrr", "ndcg_at_10", "precision_at_10", "time_seconds"}
 
+_PRECISION_RANK = {"fp16": 0, "int8": 1, "int4": 2, "gptq_int4": 3, "awq_int4": 4}
+
 
 def cross_model_comparison(
     results: list[ModelResult],
@@ -50,5 +52,5 @@ def precision_impact_table(
             "precision_at_10": r.precision_at_10,
             "time_seconds": r.total_time_seconds,
         })
-    rows.sort(key=lambda x: x["precision"])
+    rows.sort(key=lambda x: _PRECISION_RANK.get(x["precision"], 99))
     return rows

@@ -144,21 +144,21 @@ class TestSTWrapper:
         quant = model_kwargs.get("quantization_config")
         assert quant is not None
 
-    @patch("embedding_tests.models.st_wrapper.torch")
     @patch("embedding_tests.models.st_wrapper.SentenceTransformer")
+    @patch("embedding_tests.models.st_wrapper.torch.cuda")
     def test_st_wrapper_unload_clears_memory(
         self,
+        mock_cuda: MagicMock,
         mock_st_cls: MagicMock,
-        mock_torch: MagicMock,
         model_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.st_wrapper import SentenceTransformerWrapper
 
-        mock_torch.cuda.is_available.return_value = True
+        mock_cuda.is_available.return_value = True
         wrapper = SentenceTransformerWrapper(model_config, fp16_precision)
         wrapper.unload()
-        mock_torch.cuda.empty_cache.assert_called_once()
+        mock_cuda.empty_cache.assert_called_once()
 
     @patch("embedding_tests.models.st_wrapper.SentenceTransformer")
     def test_st_wrapper_satisfies_embedding_protocol(

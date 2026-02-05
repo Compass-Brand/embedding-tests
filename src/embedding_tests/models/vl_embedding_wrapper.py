@@ -14,6 +14,8 @@ from embedding_tests.hardware.precision import PrecisionConfig
 
 logger = logging.getLogger(__name__)
 
+_QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
+
 
 class VLEmbeddingWrapper:
     """Wrapper for Qwen3-VL embedding models using transformers directly."""
@@ -22,8 +24,6 @@ class VLEmbeddingWrapper:
         self._config = config
         self._precision = precision
         self._embedding_dim = config.embedding_dim
-
-        _QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
 
         if precision.storage_dtype in _QUANTIZED_DTYPES:
             dtype = torch.float16

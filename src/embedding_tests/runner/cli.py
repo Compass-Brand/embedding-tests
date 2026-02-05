@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import typer
 from rich.console import Console
@@ -14,9 +15,10 @@ from embedding_tests.runner.experiment import ExperimentRunner
 app = typer.Typer(name="emb-test", help="Embedding model testing framework")
 console = Console()
 
-CONFIGS_DIR = Path("configs")
-MODELS_DIR = CONFIGS_DIR / "models"
-RESULTS_DIR = Path("results")
+_PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+CONFIGS_DIR = Path(os.environ.get("EMB_TEST_CONFIGS_DIR", str(_PACKAGE_ROOT / "configs")))
+MODELS_DIR = Path(os.environ.get("EMB_TEST_MODELS_DIR", str(CONFIGS_DIR / "models")))
+RESULTS_DIR = Path(os.environ.get("EMB_TEST_RESULTS_DIR", str(_PACKAGE_ROOT / "results")))
 
 
 @app.command()

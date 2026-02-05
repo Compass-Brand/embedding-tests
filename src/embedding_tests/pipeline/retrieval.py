@@ -36,6 +36,11 @@ class VectorStore:
 
     def index(self, embeddings: np.ndarray, doc_ids: list[str]) -> None:
         """Add embeddings to the store."""
+        if embeddings.shape[0] != len(doc_ids):
+            raise ValueError(
+                f"Number of embeddings ({embeddings.shape[0]}) must match "
+                f"number of doc_ids ({len(doc_ids)})"
+            )
         if embeddings.shape[1] != self._embedding_dim:
             raise ValueError(
                 f"Embedding dimension mismatch: expected {self._embedding_dim}, "

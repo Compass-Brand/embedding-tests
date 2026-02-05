@@ -77,9 +77,29 @@ class ExperimentRunner:
         if is_completed(self._checkpoint_dir, name, prec):
             logger.info("Skipping %s/%s (checkpointed)", name, prec)
             checkpoint = load_checkpoint(self._checkpoint_dir, name, prec)
-            return checkpoint if checkpoint else {"model": name, "precision": prec, "skipped": True}
+            if checkpoint:
+                return {
+                    "model": checkpoint.get("model_name", name),
+                    "precision": checkpoint.get("precision", prec),
+                    "status": checkpoint.get("status"),
+                    "results": checkpoint.get("results"),
+                }
+            return {"model": name, "precision": prec, "skipped": True}
 
         logger.info("Running %s at %s precision", name, prec)
+
+        # Check if model is a reranker (no encode method) before loading
+        if model_config.model_type == ModelType.MULTIMODAL_RERANKER:
+            logger.warning(
+                "Skipping %s/%s (reranker models not supported in RAG pipeline)",
+                name,
+                prec,
+            )
+            return {
+                "model": name,
+                "precision": prec,
+                "error": "Reranker models not supported in RAG pipeline",
+            }
 
         model = None
         try:
@@ -88,19 +108,6 @@ class ExperimentRunner:
                 return {"model": name, "precision": prec, "error": "No GPU detected"}
 
             model = load_model(model_config, precision_config)
-
-            # Check if model is a reranker (no encode method)
-            if model_config.model_type == ModelType.MULTIMODAL_RERANKER:
-                logger.warning(
-                    "Skipping %s/%s (reranker models not supported in RAG pipeline)",
-                    name,
-                    prec,
-                )
-                return {
-                    "model": name,
-                    "precision": prec,
-                    "error": "Reranker models not supported in RAG pipeline",
-                }
 
             pipeline = RagPipeline(
                 embedding_model=model,
@@ -140,3 +147,9 @@ class ExperimentRunner:
             if model is not None:
                 model.unload()
             gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except ImportError:
+                pass

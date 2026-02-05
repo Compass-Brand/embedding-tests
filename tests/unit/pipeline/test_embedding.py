@@ -47,6 +47,16 @@ class TestBatchEmbed:
         result = batch_embed(mock_model, [f"text_{i}" for i in range(10)], batch_size=32)
         assert result.embeddings.shape == (10, 768)
 
+    def test_batch_embed_passes_is_query_to_model(self) -> None:
+        mock_model = MagicMock()
+        mock_model.encode.return_value = np.array([[0.1, 0.2]])
+        mock_model.get_embedding_dim.return_value = 2
+
+        batch_embed(mock_model, ["query"], batch_size=32, is_query=True)
+
+        call_kwargs = mock_model.encode.call_args[1]
+        assert call_kwargs.get("is_query") is True
+
     def test_batch_embed_empty_input_returns_empty_array(self) -> None:
         mock_model = MagicMock()
         mock_model.get_embedding_dim.return_value = 768

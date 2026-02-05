@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
-
-import numpy as np
 
 from embedding_tests.models.base import EmbeddingModel, RerankerModel
 from embedding_tests.pipeline.chunking import ChunkingStrategy, chunk_text
@@ -16,6 +15,8 @@ from embedding_tests.pipeline.reranking import rerank_results
 from embedding_tests.pipeline.retrieval import VectorStore
 
 logger = logging.getLogger(__name__)
+
+_CHUNK_SUFFIX_RE = re.compile(r"_chunk_\d+$")
 
 
 @dataclass
@@ -53,6 +54,7 @@ class RagPipeline:
         top_k: int = 10,
         reranker_top_k: int = 3,
         chunking_strategy: ChunkingStrategy = ChunkingStrategy.RECURSIVE,
+        embed_batch_size: int = 32,
     ) -> None:
         self._embedding_model = embedding_model
         self._reranker = reranker_model
@@ -61,6 +63,16 @@ class RagPipeline:
         self._top_k = top_k
         self._reranker_top_k = reranker_top_k
         self._strategy = chunking_strategy
+        self._embed_batch_size = embed_batch_size
+
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be positive")
+        if chunk_overlap < 0:
+            raise ValueError("chunk_overlap must be non-negative")
+        if chunk_overlap >= chunk_size:
+            raise ValueError("chunk_overlap must be less than chunk_size")
+        if top_k <= 0:
+            raise ValueError("top_k must be positive")
 
     def run(
         self,
@@ -103,7 +115,7 @@ class RagPipeline:
 
         # 2. Embed corpus chunks
         chunk_texts = [c["text"] for c in all_chunks]
-        embed_result = batch_embed(self._embedding_model, chunk_texts, batch_size=32)
+        embed_result = batch_embed(self._embedding_model, chunk_texts, batch_size=self._embed_batch_size)
 
         # 3. Index in vector store
         dim = self._embedding_model.get_embedding_dim()
@@ -128,7 +140,7 @@ class RagPipeline:
             )
             retrieved = store.query(q_embed.embeddings[0], top_k=self._top_k)
 
-            retrieved_doc_ids = [r.doc_id.rsplit("_chunk_", 1)[0] for r in retrieved]
+            retrieved_doc_ids = [_CHUNK_SUFFIX_RE.sub("", r.doc_id) for r in retrieved]
             scores = [r.score for r in retrieved]
 
             # 5. Optional reranking

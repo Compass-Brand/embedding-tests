@@ -68,7 +68,7 @@ class TestEmbeddingPipeline:
                 relevant = set(q["relevant_doc_ids"])
                 recall = len(retrieved_docs & relevant) / len(relevant) if relevant else 0
                 # At least some recall expected with small corpus
-                assert 0.0 <= recall <= 1.0
+                assert recall > 0.0, f"Expected positive recall for query {q['text']!r}"
 
         finally:
             model.unload()

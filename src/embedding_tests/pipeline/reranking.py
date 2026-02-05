@@ -38,6 +38,8 @@ def rerank_results(
 
     results: list[RerankResult] = []
     for idx, score in ranked:
+        if idx < 0 or idx >= len(documents):
+            raise ValueError(f"Reranker returned invalid index {idx} for {len(documents)} documents")
         doc = documents[idx]
         metadata = {k: v for k, v in doc.items() if k not in ("doc_id", "text")}
         results.append(

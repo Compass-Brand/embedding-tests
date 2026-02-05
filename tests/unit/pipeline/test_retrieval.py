@@ -56,6 +56,8 @@ class TestVectorStore:
         query = np.array([1.0, 0.0])
         results = store.query(query, top_k=2)
         assert results[0].doc_id == "d1"
+        for r in results:
+            assert 0.0 <= r.score <= 1.0
 
     def test_clear_removes_all_documents(self) -> None:
         store = VectorStore(collection_name="test_clear", embedding_dim=3)

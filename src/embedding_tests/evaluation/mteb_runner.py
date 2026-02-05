@@ -46,7 +46,12 @@ class MTEBModelAdapter:
         **kwargs: Any,
     ) -> np.ndarray:
         """Encode corpus documents."""
-        texts = [doc.get("text", doc.get("title", "")) for doc in corpus]
+        texts = []
+        for i, doc in enumerate(corpus):
+            text = doc.get("text") or doc.get("title") or ""
+            if not text:
+                logger.warning("Corpus document %d has no 'text' or 'title' field", i)
+            texts.append(text)
         return self._model.encode(texts, is_query=False, batch_size=batch_size)
 
 
@@ -62,9 +67,17 @@ def run_mteb_tasks(
     Args:
         model: The embedding model to evaluate.
         task_types: Filter by task type (e.g., "Retrieval", "Reranking").
+            Mutually exclusive with task_names.
         task_names: Specific task names to run.
+            Mutually exclusive with task_types.
         dry_run: If True, return empty results without running.
+
+    Raises:
+        ValueError: If both task_types and task_names are provided.
     """
+    if task_types is not None and task_names is not None:
+        raise ValueError("Provide only one of task_types or task_names")
+
     if dry_run:
         return {"tasks": [], "dry_run": True}
 

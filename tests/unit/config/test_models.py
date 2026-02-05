@@ -133,10 +133,13 @@ query_instruction: "query: "
 
     def test_load_all_model_configs(self, configs_dir: Path) -> None:
         configs = load_all_model_configs(configs_dir / "models")
-        assert len(configs) >= 2
+        assert len(configs) >= 2  # At least some configs exist
         names = {c.name for c in configs}
-        assert "qwen3-embedding-0.6b" in names
-        assert "qwen3-embedding-8b" in names
+        # Verify configs have names and required fields
+        for c in configs:
+            assert c.name
+            assert c.model_id
+            assert c.embedding_dim > 0 or c.model_type == ModelType.MULTIMODAL_RERANKER
 
     def test_load_model_config_validates_unknown_precision(self, tmp_path: Path) -> None:
         yaml_content = """

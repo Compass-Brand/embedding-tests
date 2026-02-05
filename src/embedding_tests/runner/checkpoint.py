@@ -58,6 +58,9 @@ def load_checkpoint(
     except json.JSONDecodeError:
         logger.warning("Corrupted checkpoint file: %s", path)
         return None
+    except OSError as e:
+        logger.warning("Failed to read checkpoint file %s: %s", path, e)
+        return None
 
 
 def is_completed(

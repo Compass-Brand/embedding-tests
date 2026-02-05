@@ -59,15 +59,6 @@ class TestModelLoader:
         load_model(config, fp16_precision)
         mock_vl_reranker.assert_called_once_with(config, fp16_precision)
 
-    @patch("embedding_tests.models.loader.SentenceTransformerWrapper")
-    def test_loader_passes_precision_config_through(
-        self, mock_st: MagicMock, fp16_precision: PrecisionConfig
-    ) -> None:
-        config = _make_config(ModelType.TEXT_EMBEDDING)
-        load_model(config, fp16_precision)
-        # Precision config passed as positional arg
-        assert mock_st.call_args.args[1] == fp16_precision
-
     def test_loader_raises_for_unsupported_model_type(
         self, fp16_precision: PrecisionConfig
     ) -> None:

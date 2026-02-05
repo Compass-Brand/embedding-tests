@@ -18,8 +18,8 @@ class TestCLI:
     def test_cli_list_command_shows_models(self) -> None:
         result = runner.invoke(app, ["list"])
         assert result.exit_code == 0
-        # Should list available models
-        assert "qwen" in result.stdout.lower() or "embedding" in result.stdout.lower()
+        # Should list available models - check for specific model name
+        assert "qwen3-embeddin" in result.stdout.lower()
 
     @patch("embedding_tests.runner.cli.ExperimentRunner")
     @patch("embedding_tests.runner.cli.load_experiment_config")
@@ -41,3 +41,7 @@ class TestCLI:
     def test_cli_report_command(self) -> None:
         result = runner.invoke(app, ["report", "--help"])
         assert result.exit_code == 0
+
+    def test_cli_report_command_validates_directory(self) -> None:
+        result = runner.invoke(app, ["report", "/nonexistent/path"])
+        assert result.exit_code != 0 or "no results found" in result.stdout.lower() or "error" in result.stdout.lower()

@@ -11,7 +11,8 @@ def compute_context_recall(
     if not relevant:
         return 0.0
     relevant_set = set(relevant)
-    found = sum(1 for doc_id in retrieved if doc_id in relevant_set)
+    retrieved_set = set(retrieved)
+    found = len(retrieved_set & relevant_set)
     return found / len(relevant_set)
 
 
@@ -23,8 +24,9 @@ def compute_context_precision(
     if not retrieved:
         return 0.0
     relevant_set = set(relevant)
-    found = sum(1 for doc_id in retrieved if doc_id in relevant_set)
-    return found / len(retrieved)
+    retrieved_set = set(retrieved)
+    found = len(retrieved_set & relevant_set)
+    return found / len(retrieved_set)
 
 
 def aggregate_scores(scores: list[float]) -> float:

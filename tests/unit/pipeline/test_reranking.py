@@ -58,6 +58,12 @@ class TestReranking:
         with pytest.raises(ValueError, match="missing required"):
             rerank_results("query", docs, mock_reranker, top_k=1)
 
+    def test_rerank_raises_on_missing_text(self) -> None:
+        mock_reranker = MagicMock()
+        docs = [{"doc_id": "d1"}]  # missing text
+        with pytest.raises(ValueError, match="missing required"):
+            rerank_results("query", docs, mock_reranker, top_k=1)
+
     def test_rerank_handles_empty_documents(self) -> None:
         mock_reranker = MagicMock()
         mock_reranker.rerank.return_value = []

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+import torch
 
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
 from embedding_tests.hardware.precision import PrecisionConfig
@@ -51,7 +52,7 @@ class TestVLEmbeddingWrapper:
 
         VLEmbeddingWrapper(vl_model_config, fp16_precision)
         call_kwargs = mock_auto_model.from_pretrained.call_args.kwargs
-        assert "float16" in str(call_kwargs.get("torch_dtype", ""))
+        assert call_kwargs.get("torch_dtype") == torch.float16
 
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoTokenizer")
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoModel")
@@ -80,25 +81,26 @@ class TestVLEmbeddingWrapper:
         from embedding_tests.models.vl_embedding_wrapper import VLEmbeddingWrapper
 
         mock_model = MagicMock()
+        # Return real tensors so the encode pooling math works
         mock_output = MagicMock()
-        mock_output.last_hidden_state = MagicMock()
-        mock_output.last_hidden_state.__getitem__ = MagicMock(
-            return_value=MagicMock(
-                cpu=MagicMock(return_value=MagicMock(
-                    numpy=MagicMock(return_value=np.array([[0.1, 0.2]]))
-                ))
-            )
+        mock_output.last_hidden_state = torch.tensor(
+            [[[0.1, 0.2], [0.3, 0.4]], [[0.5, 0.6], [0.7, 0.8]]]
         )
         mock_model.return_value = mock_output
+        mock_model.get_input_embeddings.return_value.weight.device = torch.device("cpu")
         mock_auto_model.from_pretrained.return_value = mock_model
 
         mock_tok = MagicMock()
-        mock_tok.return_value = {"input_ids": MagicMock(), "attention_mask": MagicMock()}
+        mock_tok.return_value = {
+            "input_ids": torch.tensor([[1, 2], [3, 4]]),
+            "attention_mask": torch.tensor([[1, 1], [1, 1]]),
+        }
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         wrapper = VLEmbeddingWrapper(vl_model_config, fp16_precision)
         result = wrapper.encode(["hello", "world"])
         assert isinstance(result, np.ndarray)
+        assert result.shape[0] == 2  # Two input texts
 
     @patch("embedding_tests.models.vl_embedding_wrapper.torch")
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoTokenizer")

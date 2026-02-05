@@ -17,8 +17,11 @@ class TestChunkText:
     def test_recursive_chunking_produces_chunks_within_size_limit(self) -> None:
         text = "Hello world. " * 100  # ~1300 chars
         chunks = chunk_text(text, strategy=ChunkingStrategy.RECURSIVE, chunk_size=200, chunk_overlap=20)
+        # RecursiveCharacterTextSplitter may exceed chunk_size by up to ~50 chars
+        # when avoiding mid-word splits at separator boundaries
+        SPLITTER_OVERFLOW = 50
         for chunk in chunks:
-            assert len(chunk.text) <= 200 + 50  # Allow small overflow from splitter
+            assert len(chunk.text) <= 200 + SPLITTER_OVERFLOW
 
     def test_recursive_chunking_respects_overlap(self) -> None:
         text = "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five. " * 10
@@ -33,10 +36,14 @@ class TestChunkText:
     def test_sentence_chunking_splits_on_sentence_boundaries(self) -> None:
         text = "First sentence. Second sentence. Third sentence. Fourth sentence. Fifth sentence."
         chunks = chunk_text(text, strategy=ChunkingStrategy.SENTENCE, chunk_size=50, chunk_overlap=0)
-        for chunk in chunks:
-            # Each chunk should contain complete sentence fragments
-            # The sentence splitter splits on ". " so chunks contain sentence text
-            assert len(chunk.text.strip()) > 0
+        for i, chunk in enumerate(chunks):
+            stripped = chunk.text.strip()
+            assert len(stripped) > 0
+            # Non-final chunks should end at a sentence boundary.
+            # The ". " separator splits so the period may go to the next chunk,
+            # meaning the chunk ends with a complete word (alphanumeric char).
+            if i < len(chunks) - 1:
+                assert stripped[-1].isalnum() or stripped.endswith(".")
 
     def test_token_chunking_produces_chunks(self) -> None:
         text = "word " * 200
@@ -47,8 +54,8 @@ class TestChunkText:
         text = "The quick brown fox jumps over the lazy dog. " * 20
         chunks = chunk_text(text, strategy=ChunkingStrategy.RECURSIVE, chunk_size=100, chunk_overlap=0)
         reassembled = "".join(c.text for c in chunks)
-        # All content should be present (may have minor whitespace differences)
-        assert len(reassembled) >= len(text.strip()) - 10
+        # With zero overlap, all content should be preserved exactly
+        assert reassembled.strip() == text.strip()
 
     def test_chunking_returns_metadata(self) -> None:
         text = "Some text content for chunking. " * 10

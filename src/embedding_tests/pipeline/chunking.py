@@ -13,7 +13,7 @@ class ChunkingStrategy(Enum):
 
     RECURSIVE = "recursive"
     SENTENCE = "sentence"
-    TOKEN = "token"
+    TOKEN = "token"  # Uses word count (len(text.split())) as proxy for tokens
 
 
 @dataclass

@@ -55,29 +55,26 @@ class VLRerankerWrapper:
         top_k: int = 10,
     ) -> list[tuple[int, float]]:
         """Rerank documents by relevance to query."""
-        pairs = [[query, doc] for doc in documents]
-        scores: list[float] = []
+        inputs = self._tokenizer(
+            [query] * len(documents),
+            documents,
+            padding=True,
+            truncation=True,
+            return_tensors="pt",
+        )
+        inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
 
-        for pair in pairs:
-            inputs = self._tokenizer(
-                pair[0],
-                pair[1],
-                padding=True,
-                truncation=True,
-                return_tensors="pt",
-            )
-            inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
+        with torch.no_grad():
+            outputs = self._model(**inputs)
 
-            with torch.no_grad():
-                outputs = self._model(**inputs)
+        logits = outputs.logits.squeeze(-1)
+        if logits.dim() == 0:
+            scores = [logits.item()]
+        else:
+            scores = logits.tolist()
 
-            score = outputs.logits.squeeze(-1).item()
-            scores.append(score)
-
-        # Create (index, score) tuples sorted by score descending
         indexed_scores = list(enumerate(scores))
         indexed_scores.sort(key=lambda x: x[1], reverse=True)
-
         return indexed_scores[:top_k]
 
     def unload(self) -> None:

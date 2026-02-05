@@ -10,3 +10,4 @@ pipeline:
   chunk_size: 512
   chunk_overlap: 50
   retrieval_top_k: 10
+  reranker_top_k: 5

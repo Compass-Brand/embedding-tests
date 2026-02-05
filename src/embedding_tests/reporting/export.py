@@ -36,7 +36,7 @@ def export_csv(results: list[ModelResult], output_path: Path) -> None:
 def export_markdown(results: list[ModelResult], output_path: Path) -> None:
     """Export results as a Markdown table."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    headers = ["model_name", "precision", "recall@10", "MRR", "NDCG@10", "P@10", "time(s)"]
+    headers = ["model_name", "precision", "recall@10", "MRR", "NDCG@10", "P@10", "time(s)", "error"]
     separator = "|".join(["---"] * len(headers))
 
     lines = [
@@ -49,6 +49,7 @@ def export_markdown(results: list[ModelResult], output_path: Path) -> None:
             f"{r.recall_at_10:.4f}", f"{r.mrr:.4f}",
             f"{r.ndcg_at_10:.4f}", f"{r.precision_at_10:.4f}",
             f"{r.total_time_seconds:.2f}",
+            r.error or "",
         ]
         lines.append("| " + " | ".join(row) + " |")
 

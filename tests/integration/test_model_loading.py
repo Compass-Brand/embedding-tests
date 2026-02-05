@@ -46,6 +46,7 @@ class TestModelLoading:
             result = model.encode(["Test text for VL embedding"])
             assert isinstance(result, np.ndarray)
             assert result.shape[1] == config.embedding_dim
+            assert result.shape[0] == 1
         finally:
             model.unload()
             torch.cuda.empty_cache()

@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+import torch
 
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
 from embedding_tests.hardware.precision import PrecisionConfig
@@ -50,7 +51,7 @@ class TestVLRerankerWrapper:
 
         VLRerankerWrapper(reranker_config, fp16_precision)
         call_kwargs = mock_auto_model.from_pretrained.call_args.kwargs
-        assert "float16" in str(call_kwargs.get("torch_dtype", ""))
+        assert call_kwargs.get("torch_dtype") == torch.float16
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
@@ -67,17 +68,17 @@ class TestVLRerankerWrapper:
 
         mock_model = MagicMock()
         mock_model.device = torch.device("cpu")
-        # Each call returns a single logit for one query-doc pair
-        outputs = []
-        for score in [0.9, 0.3, 0.7]:
-            out = MagicMock()
-            out.logits = torch.tensor([[score]])
-            outputs.append(out)
-        mock_model.side_effect = outputs
+        # Batch call returns logits for all query-doc pairs at once
+        mock_output = MagicMock()
+        mock_output.logits = torch.tensor([[0.9], [0.3], [0.7]])
+        mock_model.return_value = mock_output
         mock_auto_model.from_pretrained.return_value = mock_model
 
         mock_tok = MagicMock()
-        mock_tok.return_value = {"input_ids": torch.tensor([[1]]), "attention_mask": torch.tensor([[1]])}
+        mock_tok.return_value = {
+            "input_ids": torch.tensor([[1], [1], [1]]),
+            "attention_mask": torch.tensor([[1], [1], [1]]),
+        }
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
@@ -86,6 +87,10 @@ class TestVLRerankerWrapper:
         # Scores should be sorted descending
         scores = [r[1] for r in results]
         assert scores == sorted(scores, reverse=True)
+        # Original scores: doc0=0.9, doc1=0.3, doc2=0.7
+        # Expected order: doc0 (0.9), doc2 (0.7), doc1 (0.3)
+        indices = [r[0] for r in results]
+        assert indices == [0, 2, 1]
 
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoModelForSequenceClassification")
@@ -102,21 +107,24 @@ class TestVLRerankerWrapper:
 
         mock_model = MagicMock()
         mock_model.device = torch.device("cpu")
-        outputs = []
-        for score in [0.9, 0.3, 0.7, 0.5, 0.1]:
-            out = MagicMock()
-            out.logits = torch.tensor([[score]])
-            outputs.append(out)
-        mock_model.side_effect = outputs
+        # Batch call returns logits for all query-doc pairs at once
+        mock_output = MagicMock()
+        mock_output.logits = torch.tensor([[0.9], [0.3], [0.7], [0.5], [0.1]])
+        mock_model.return_value = mock_output
         mock_auto_model.from_pretrained.return_value = mock_model
 
         mock_tok = MagicMock()
-        mock_tok.return_value = {"input_ids": torch.tensor([[1]]), "attention_mask": torch.tensor([[1]])}
+        mock_tok.return_value = {
+            "input_ids": torch.tensor([[1], [1], [1], [1], [1]]),
+            "attention_mask": torch.tensor([[1], [1], [1], [1], [1]]),
+        }
         mock_tokenizer.from_pretrained.return_value = mock_tok
 
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         results = wrapper.rerank("query", ["a", "b", "c", "d", "e"], top_k=2)
         assert len(results) == 2
+        scores = [r[1] for r in results]
+        assert scores[0] >= scores[1]  # Still sorted
 
     @patch("embedding_tests.models.vl_reranker_wrapper.torch")
     @patch("embedding_tests.models.vl_reranker_wrapper.AutoTokenizer")

@@ -13,6 +13,12 @@ Beads is issue tracking that lives in your repo, making it perfect for AI coding
 ### Essential Commands
 
 ```bash
+# Onboard to the project (run first time)
+bd onboard
+
+# Check project readiness
+bd ready
+
 # Create new issues
 bd create "Add user authentication"
 

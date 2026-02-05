@@ -25,6 +25,19 @@ class TestModelResult:
         assert result.recall_at_10 == 0.85
         assert result.total_time_seconds == 12.5
 
+    def test_model_result_with_error(self) -> None:
+        result = ModelResult(
+            model_name="test-model",
+            precision="fp16",
+            recall_at_10=0.0,
+            mrr=0.0,
+            ndcg_at_10=0.0,
+            precision_at_10=0.0,
+            total_time_seconds=0.0,
+            error="Model failed to load",
+        )
+        assert result.error == "Model failed to load"
+
 
 class TestResultsCollector:
     """Tests for ResultsCollector."""
@@ -55,7 +68,3 @@ class TestResultsCollector:
         collector = ResultsCollector()
         assert collector.results == []
         assert collector.filter_by_model("nonexistent") == []
-
-    def test_model_result_with_error(self) -> None:
-        result = ModelResult(model_name="test-model", precision="fp16", recall_at_10=0.0, mrr=0.0, ndcg_at_10=0.0, precision_at_10=0.0, total_time_seconds=0.0, error="Model failed to load")
-        assert result.error == "Model failed to load"

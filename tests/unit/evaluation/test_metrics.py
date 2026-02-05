@@ -36,6 +36,10 @@ class TestRecallAtK:
         relevant = {"d1", "d2"}
         assert recall_at_k(retrieved, relevant, k=3) == 1.0
 
+    def test_recall_at_k_invalid_k_raises(self) -> None:
+        with pytest.raises(ValueError, match="k must be positive"):
+            recall_at_k(["d1"], {"d1"}, k=0)
+
 
 class TestMRR:
     """Tests for Mean Reciprocal Rank."""
@@ -86,6 +90,10 @@ class TestNDCG:
         relevance = {"d1": 3.0, "d2": 1.0, "d3": 0.0}
         score = ndcg_at_k(retrieved, relevance, k=3)
         assert 0.0 < score < 1.0
+
+    def test_ndcg_invalid_k_raises(self) -> None:
+        with pytest.raises(ValueError, match="k must be positive"):
+            ndcg_at_k(["d1"], {"d1": 1.0}, k=0)
 
 
 class TestPrecisionAtK:

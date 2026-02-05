@@ -39,6 +39,11 @@ class ExperimentConfig:
     reranker: str | None = None
     datasets: list[str] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "models", tuple(self.models))
+        object.__setattr__(self, "precisions", tuple(self.precisions))
+        object.__setattr__(self, "datasets", tuple(self.datasets))
+
 
 def load_experiment_config(
     experiment_path: Path,

@@ -5,4 +5,5 @@ params_billions: 2.0
 embedding_dim: 0
 supported_precisions:
   - fp16
+  - int8
 trust_remote_code: true

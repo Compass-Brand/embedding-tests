@@ -1,5 +1,7 @@
 """Root conftest for embedding-tests. Registers pytest markers and GPU skip logic."""
 
+import functools
+
 import pytest
 import torch
 
@@ -12,6 +14,7 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "vl: requires VL model dependencies")
 
 
+@functools.lru_cache(maxsize=1)
 def _gpu_is_usable() -> bool:
     """Check if CUDA GPU is available and compatible with this PyTorch build."""
     if not torch.cuda.is_available():

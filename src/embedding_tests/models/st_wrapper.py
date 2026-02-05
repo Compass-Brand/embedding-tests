@@ -14,6 +14,8 @@ from embedding_tests.hardware.precision import PrecisionConfig
 
 logger = logging.getLogger(__name__)
 
+_QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
+
 
 class SentenceTransformerWrapper:
     """Wrapper around sentence-transformers for hardware-aware loading."""
@@ -22,8 +24,6 @@ class SentenceTransformerWrapper:
         self._config = config
         self._precision = precision
         self._embedding_dim = config.embedding_dim
-
-        _QUANTIZED_DTYPES = {"int4", "int8", "gptq_int4", "awq_int4"}
 
         if precision.storage_dtype in _QUANTIZED_DTYPES:
             torch_dtype = torch.float16
