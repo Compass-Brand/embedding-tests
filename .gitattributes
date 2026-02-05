@@ -91,3 +91,6 @@ poetry.lock text eol=lf -diff
 Cargo.lock text eol=lf -diff
 composer.lock text eol=lf -diff
 Gemfile.lock text eol=lf -diff
+
+# Use bd merge for beads JSONL files
+.beads/issues.jsonl merge=beads
