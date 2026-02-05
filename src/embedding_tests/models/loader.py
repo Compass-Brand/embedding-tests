@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import logging
 
+# Apply PyTorch compatibility patches before any model loading
+from embedding_tests.hardware import compat  # noqa: F401
+
 from embedding_tests.config.models import ModelConfig, ModelType
 from embedding_tests.hardware.precision import PrecisionConfig
 from embedding_tests.models.base import EmbeddingModel, RerankerModel

@@ -1,0 +1,10 @@
+name: int8-test
+description: Quick test for INT8 quantization with smallest model
+models:
+  - qwen3-embedding-0.6b
+precisions:
+  - int8
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10
