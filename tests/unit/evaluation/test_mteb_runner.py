@@ -57,6 +57,34 @@ class TestMTEBModelAdapter:
         call_args = mock_model.encode.call_args
         assert call_args[0][0] == ["doc 1 text", "doc 2 text"]
 
+    def test_adapter_encode_corpus_falls_back_to_title(self) -> None:
+        """Adapter encode_corpus should fall back to title if text is missing."""
+        from embedding_tests.evaluation.mteb_runner import MTEBModelAdapter
+
+        mock_model = MagicMock()
+        mock_model.encode.return_value = np.array([[1, 2, 3]])
+
+        adapter = MTEBModelAdapter(mock_model)
+        corpus = [{"title": "Title only"}]
+        adapter.encode_corpus(corpus)
+
+        call_args = mock_model.encode.call_args
+        assert call_args[0][0] == ["Title only"]
+
+    def test_adapter_encode_corpus_handles_empty_doc(self) -> None:
+        """Adapter encode_corpus should handle docs with no text or title."""
+        from embedding_tests.evaluation.mteb_runner import MTEBModelAdapter
+
+        mock_model = MagicMock()
+        mock_model.encode.return_value = np.array([[1, 2, 3]])
+
+        adapter = MTEBModelAdapter(mock_model)
+        corpus = [{}]
+        adapter.encode_corpus(corpus)
+
+        call_args = mock_model.encode.call_args
+        assert call_args[0][0] == [""]
+
 
 class TestRunMTEBTasks:
     """Tests for run_mteb_tasks function."""
@@ -188,3 +216,19 @@ class TestMTEBResultsFormatter:
         formatted = format_mteb_results(raw_results)
 
         assert formatted["NFCorpus"]["ndcg_at_10"] == 0.80
+
+    def test_format_mteb_results_filters_non_numeric(self) -> None:
+        """Should filter out non-numeric metric values."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        raw_results = [
+            MagicMock(
+                task_name="NFCorpus",
+                scores={"test": [{"ndcg_at_10": 0.85, "hf_subset": "default"}]},
+            )
+        ]
+
+        formatted = format_mteb_results(raw_results)
+
+        assert "ndcg_at_10" in formatted["NFCorpus"]
+        assert "hf_subset" not in formatted["NFCorpus"]

@@ -153,8 +153,12 @@ def format_mteb_results(raw_results: list[Any]) -> dict[str, dict[str, float]]:
         # (per-language), but we only extract the first (aggregate).
         metrics: dict[str, float] = {}
 
-        # Prefer "test" split; fall back to first available
-        split_scores = scores.get("test") or next(iter(scores.values()), None)
+        # Prefer "test" split if present; fall back to first available if absent.
+        # Note: we check for key presence, not falsiness - an empty test split
+        # is treated differently than a missing one.
+        split_scores = scores.get("test") if "test" in scores else next(
+            iter(scores.values()), None
+        )
         if split_scores and isinstance(split_scores, list):
             score_dict = split_scores[0]
             for metric_name, value in score_dict.items():
