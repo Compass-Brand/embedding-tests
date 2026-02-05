@@ -134,10 +134,10 @@ def _convert_corpus(
 
         # BEIR format: _id, title, text
         doc_id = doc.get("_id", str(i))
-        title = doc.get("title", "")
+        title = (doc.get("title", "") or "").strip()
         text = doc.get("text", "")
 
-        # Combine title and text
+        # Combine title and text (only if title is non-empty after stripping)
         full_text = f"{title}\n\n{text}".strip() if title else text
 
         corpus.append({
@@ -190,8 +190,8 @@ def _load_qrels(hf_name: str, split: str) -> dict[str, dict[str, int]]:
 
         qrels: dict[str, dict[str, int]] = {}
         for row in qrels_split:
-            qid = row.get("query-id", row.get("qid", ""))
-            did = row.get("corpus-id", row.get("docid", ""))
+            qid = str(row.get("query-id", row.get("qid", "")))
+            did = str(row.get("corpus-id", row.get("docid", "")))
             score = row.get("score", 1)
 
             if qid not in qrels:

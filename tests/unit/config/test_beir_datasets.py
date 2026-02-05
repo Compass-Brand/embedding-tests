@@ -142,3 +142,81 @@ class TestBEIRDatasetLoader:
 
         assert len(corpus) == 10
         assert len(queries) == 5
+
+    @patch("datasets.load_dataset")
+    def test_load_beir_filters_non_positive_relevance(self, mock_load: MagicMock) -> None:
+        """Should only include docs with positive relevance scores."""
+        from embedding_tests.config.beir_datasets import load_beir_dataset
+
+        mock_corpus = [
+            {"_id": "doc1", "title": "", "text": "Text 1"},
+            {"_id": "doc2", "title": "", "text": "Text 2"},
+        ]
+        mock_queries = [{"_id": "q1", "text": "Query"}]
+        mock_qrels = [
+            {"query-id": "q1", "corpus-id": "doc1", "score": 1},
+            {"query-id": "q1", "corpus-id": "doc2", "score": 0},  # Should be filtered
+        ]
+
+        def side_effect(name, *args, **kwargs):
+            if "qrels" in args:
+                return {"test": mock_qrels}
+            return {"corpus": mock_corpus, "queries": mock_queries}
+
+        mock_load.side_effect = side_effect
+
+        corpus, queries = load_beir_dataset("nfcorpus")
+
+        # Only doc1 should be in relevant_doc_ids (score > 0)
+        assert queries[0]["relevant_doc_ids"] == ["doc1"]
+
+    @patch("datasets.load_dataset")
+    def test_load_beir_handles_empty_title(self, mock_load: MagicMock) -> None:
+        """Empty title should not produce spurious newlines in text."""
+        from embedding_tests.config.beir_datasets import load_beir_dataset
+
+        mock_corpus = [
+            {"_id": "doc1", "title": "", "text": "Just text"},
+            {"_id": "doc2", "title": "  ", "text": "More text"},
+        ]
+        mock_queries = [{"_id": "q1", "text": "Query"}]
+        mock_qrels: list[dict] = []
+
+        def side_effect(name, *args, **kwargs):
+            if "qrels" in args:
+                return {"test": mock_qrels}
+            return {"corpus": mock_corpus, "queries": mock_queries}
+
+        mock_load.side_effect = side_effect
+
+        corpus, queries = load_beir_dataset("nfcorpus")
+
+        # Text should not start with newlines when title is empty
+        assert corpus[0]["text"] == "Just text"
+        assert not corpus[1]["text"].startswith("\n")
+
+    @patch("datasets.load_dataset")
+    def test_load_beir_handles_qrels_failure(self, mock_load: MagicMock) -> None:
+        """Should gracefully handle qrels loading failure."""
+        from embedding_tests.config.beir_datasets import load_beir_dataset
+
+        mock_corpus = [{"_id": "doc1", "title": "", "text": "Text"}]
+        mock_queries = [{"_id": "q1", "text": "Query"}]
+
+        call_count = 0
+
+        def side_effect(name, *args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if "qrels" in args:
+                raise ValueError("Failed to load qrels")
+            return {"corpus": mock_corpus, "queries": mock_queries}
+
+        mock_load.side_effect = side_effect
+
+        corpus, queries = load_beir_dataset("nfcorpus")
+
+        # Should still work, just with empty relevant_doc_ids
+        assert len(corpus) == 1
+        assert len(queries) == 1
+        assert queries[0]["relevant_doc_ids"] == []
