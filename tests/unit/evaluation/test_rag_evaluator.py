@@ -142,6 +142,18 @@ class TestRAGEvaluationSample:
         assert sample.retrieved_doc_ids == ["doc1", "doc2"]
         assert sample.contexts == ["Context text 1", "Context text 2"]
 
+    def test_rag_sample_default_doc_ids(self) -> None:
+        """Should default doc_ids to empty lists."""
+        from embedding_tests.evaluation.rag_evaluator import RAGEvaluationSample
+
+        sample = RAGEvaluationSample(
+            question="Q1",
+            contexts=["Context"],
+            answer="A1",
+        )
+        assert sample.relevant_doc_ids == []
+        assert sample.retrieved_doc_ids == []
+
 
 class TestRAGEvaluator:
     """Tests for the main RAG evaluator class."""
@@ -296,7 +308,10 @@ class TestRAGASMetrics:
             )
         ]
         evaluator = RAGEvaluator()  # No LLM
-        results = evaluator.evaluate(samples)
+        # Request faithfulness metric to verify it's skipped when no LLM
+        results = evaluator.evaluate(samples, metrics=["faithfulness", "context_recall"])
 
         # Faithfulness should not be in results without LLM
         assert "faithfulness" not in results
+        # But context_recall should still be computed
+        assert "context_recall" in results

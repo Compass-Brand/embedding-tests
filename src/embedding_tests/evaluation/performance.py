@@ -147,11 +147,10 @@ class PerformanceTracker:
 
             throughput = compute_throughput(num_items, total_time)
 
-            # Convert to milliseconds for latency stats
+            # Convert to milliseconds for per-call latency stats.
+            # Note: these represent latency per track() call, not per-item.
             latency_ms = [t * 1000 for t in timings]
-            latency_stats = (
-                compute_latency_stats(latency_ms) if latency_ms else {}
-            )
+            latency_stats = compute_latency_stats(latency_ms)
 
             results[operation] = {
                 "total_time_seconds": total_time,

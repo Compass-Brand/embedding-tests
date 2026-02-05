@@ -25,7 +25,7 @@ class RAGEvaluationSample:
         contexts: Retrieved text contexts (for LLM-based metrics like faithfulness).
         answer: The generated answer.
         ground_truth: Expected answer (for answer correctness metrics).
-        relevant_doc_ids: Set of ground-truth relevant document IDs.
+        relevant_doc_ids: List of ground-truth relevant document IDs.
         retrieved_doc_ids: IDs of retrieved documents (for retrieval metrics).
             If not provided, falls back to using contexts as doc IDs.
     """
@@ -81,9 +81,15 @@ class RAGEvaluator:
         per_sample_scores: list[dict[str, float]] = []
         for sample in samples:
             sample_scores: dict[str, float] = {}
-            # Use retrieved_doc_ids for retrieval metrics if available,
-            # otherwise fall back to contexts (for backward compatibility)
-            retrieved = sample.retrieved_doc_ids or sample.contexts
+            # Use retrieved_doc_ids for retrieval metrics. An empty list means
+            # "no documents retrieved" (resulting in 0 recall/precision).
+            # Fall back to contexts only when retrieved_doc_ids was never set
+            # (for backward compatibility with code that used contexts as IDs).
+            retrieved = (
+                sample.retrieved_doc_ids
+                if sample.retrieved_doc_ids
+                else sample.contexts
+            )
             if "context_recall" in metrics:
                 sample_scores["context_recall"] = compute_context_recall(
                     retrieved, sample.relevant_doc_ids
