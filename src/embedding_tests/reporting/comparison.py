@@ -21,6 +21,8 @@ def cross_model_comparison(
         raise ValueError(f"Unknown metric: {metric!r}. Valid: {sorted(_VALID_METRICS)}")
     rows = []
     for r in results:
+        if r.error:
+            continue
         row = {
             "model_name": r.model_name,
             "precision": r.precision,

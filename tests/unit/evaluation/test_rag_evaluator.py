@@ -68,6 +68,13 @@ class TestContextPrecision:
         relevant = ["d1", "d2"]
         assert compute_context_precision(retrieved, relevant) == 0.0
 
+    def test_context_precision_with_duplicates(self) -> None:
+        """Verify duplicates in retrieved are deduplicated via set conversion."""
+        retrieved = ["d1", "d1", "d3"]
+        relevant = ["d1", "d2"]
+        # set(retrieved) = {"d1", "d3"}, intersection = {"d1"} -> 1/2 = 0.5
+        assert compute_context_precision(retrieved, relevant) == pytest.approx(0.5)
+
 
 class TestAggregateScores:
     """Tests for score aggregation."""

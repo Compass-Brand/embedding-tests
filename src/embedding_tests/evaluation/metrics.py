@@ -25,7 +25,11 @@ def precision_at_k(
     relevant: set[str],
     k: int,
 ) -> float:
-    """Compute Precision@k: fraction of top-k results that are relevant."""
+    """Compute Precision@k: fraction of top-k results that are relevant.
+
+    When k > len(retrieved), only the available results are considered
+    and the denominator is len(retrieved) rather than k.
+    """
     if k <= 0:
         raise ValueError(f"k must be positive, got {k}")
     top_k = retrieved[:k]

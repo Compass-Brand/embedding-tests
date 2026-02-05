@@ -168,6 +168,9 @@ class TestVLRerankerWrapper:
     ) -> None:
         from embedding_tests.models.vl_reranker_wrapper import VLRerankerWrapper
 
+        mock_model = mock_auto_model.from_pretrained.return_value
         wrapper = VLRerankerWrapper(reranker_config, fp16_precision)
         results = wrapper.rerank("query", [])
         assert results == []
+        # Verify short-circuit: model should not be called with empty documents
+        mock_model.assert_not_called()

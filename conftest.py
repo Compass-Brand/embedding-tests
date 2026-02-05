@@ -11,7 +11,7 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "gpu: requires GPU hardware")
     config.addinivalue_line("markers", "slow: slow running tests")
     config.addinivalue_line("markers", "integration: integration tests")
-    config.addinivalue_line("markers", "vl: requires VL model dependencies")
+    config.addinivalue_line("markers", "vl: requires Vision-Language (VL) model dependencies")
 
 
 @functools.lru_cache(maxsize=1)

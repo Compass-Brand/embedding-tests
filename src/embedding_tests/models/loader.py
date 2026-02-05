@@ -19,17 +19,18 @@ def load_model(
     precision: PrecisionConfig,
 ) -> EmbeddingModel | RerankerModel:
     """Load a model based on its type, dispatching to the correct wrapper."""
-    model_type_str = config.model_type.value
     logger.debug(
         "Loading model %s (%s) with precision %s",
         config.name,
-        model_type_str,
+        config.model_type.value,
         precision.storage_dtype,
     )
-    if config.model_type == ModelType.TEXT_EMBEDDING:
-        return SentenceTransformerWrapper(config, precision)
-    if config.model_type == ModelType.MULTIMODAL_EMBEDDING:
-        return VLEmbeddingWrapper(config, precision)
-    if config.model_type == ModelType.MULTIMODAL_RERANKER:
-        return VLRerankerWrapper(config, precision)
-    raise ValueError(f"Unsupported model type: {config.model_type}")
+    match config.model_type:
+        case ModelType.TEXT_EMBEDDING:
+            return SentenceTransformerWrapper(config, precision)
+        case ModelType.MULTIMODAL_EMBEDDING:
+            return VLEmbeddingWrapper(config, precision)
+        case ModelType.MULTIMODAL_RERANKER:
+            return VLRerankerWrapper(config, precision)
+        case _:
+            raise ValueError(f"Unsupported model type: {config.model_type}")

@@ -62,5 +62,6 @@ class TestBatchEmbed:
         mock_model.get_embedding_dim.return_value = 768
         result = batch_embed(mock_model, [], batch_size=32)
         assert result.embeddings.shape[0] == 0
+        assert result.embeddings.shape[1] == 768
         assert result.num_texts == 0
         mock_model.encode.assert_not_called()

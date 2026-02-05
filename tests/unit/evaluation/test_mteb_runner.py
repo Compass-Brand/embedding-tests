@@ -69,3 +69,15 @@ class TestRunMTEBTasks:
             results = run_mteb_tasks(mock_model, task_types=["Retrieval"], dry_run=False)
         assert "error" in results
         assert results["error"] == "mteb not installed"
+
+    def test_mteb_runner_raises_when_both_params_provided(self) -> None:
+        mock_model = MagicMock()
+        with pytest.raises(ValueError, match="only one of"):
+            run_mteb_tasks(
+                mock_model, task_types=["Retrieval"], task_names=["STS12"]
+            )
+
+    def test_mteb_runner_raises_when_no_params_provided(self) -> None:
+        mock_model = MagicMock()
+        with pytest.raises(ValueError, match="must be provided"):
+            run_mteb_tasks(mock_model)

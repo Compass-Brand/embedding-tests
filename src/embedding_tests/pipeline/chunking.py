@@ -38,6 +38,8 @@ def chunk_text(
     For the TOKEN strategy, ``chunk_size`` and ``chunk_overlap`` are measured
     in word counts (using ``str.split()``) rather than character counts.
     """
+    if chunk_size <= 0:
+        raise ValueError(f"chunk_size must be positive, got {chunk_size}")
     if chunk_overlap >= chunk_size:
         raise ValueError(
             f"chunk_overlap ({chunk_overlap}) must be less than chunk_size ({chunk_size})"

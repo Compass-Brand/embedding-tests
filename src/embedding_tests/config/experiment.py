@@ -43,6 +43,10 @@ class ExperimentConfig:
         object.__setattr__(self, "models", tuple(self.models))
         object.__setattr__(self, "precisions", tuple(self.precisions))
         object.__setattr__(self, "datasets", tuple(self.datasets))
+        if not self.models:
+            raise ValueError("models must not be empty")
+        if not self.precisions:
+            raise ValueError("precisions must not be empty")
 
 
 def load_experiment_config(
@@ -101,5 +105,5 @@ def load_experiment_config(
         precisions=precisions,
         pipeline=pipeline,
         reranker=data.get("reranker"),
-        datasets=data.get("datasets", []),
+        datasets=tuple(data.get("datasets", [])),
     )

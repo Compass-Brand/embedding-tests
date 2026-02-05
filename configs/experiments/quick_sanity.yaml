@@ -1,5 +1,5 @@
 name: quick-sanity
-description: Quick sanity check with smallest model (Qwen3-Embedding-0.6B)
+description: Quick sanity check with smallest model (Qwen3-Embedding-0.6B) including reranking
 models:
   - qwen3-embedding-0.6b
 precisions:

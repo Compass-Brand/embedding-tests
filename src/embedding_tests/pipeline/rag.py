@@ -127,72 +127,76 @@ class RagPipeline:
             collection_name=f"rag_{id(self)}",
             embedding_dim=dim,
         )
-        chunk_ids = [f"{c['doc_id']}_chunk_{c['chunk_index']}" for c in all_chunks]
-        store.index(embed_result.embeddings, chunk_ids)
+        try:
+            chunk_ids = [f"{c['doc_id']}_chunk_{c['chunk_index']}" for c in all_chunks]
+            store.index(embed_result.embeddings, chunk_ids)
 
-        # Build chunk_lookup once outside the query loop
-        chunk_lookup = {
-            f"{c['doc_id']}_chunk_{c['chunk_index']}": c
-            for c in all_chunks
-        }
+            # Build chunk_lookup once outside the query loop
+            chunk_lookup = {
+                f"{c['doc_id']}_chunk_{c['chunk_index']}": c
+                for c in all_chunks
+            }
 
-        # 4. Query and retrieve
-        total_query_embed_time = 0.0
-        query_results: list[QueryResult] = []
-        for q in queries:
-            q_embed = batch_embed(
-                self._embedding_model, [q["text"]], batch_size=1, is_query=True
-            )
-            total_query_embed_time += q_embed.total_time_seconds
-            retrieved = store.query(q_embed.embeddings[0], top_k=self._top_k)
+            # 4. Query and retrieve
+            total_query_embed_time = 0.0
+            query_results: list[QueryResult] = []
+            for q in queries:
+                q_embed = batch_embed(
+                    self._embedding_model, [q["text"]], batch_size=1, is_query=True
+                )
+                total_query_embed_time += q_embed.total_time_seconds
+                retrieved = store.query(q_embed.embeddings[0], top_k=self._top_k)
 
-            # Deduplicate doc IDs after stripping chunk suffixes, preserving order
-            seen: set[str] = set()
-            retrieved_doc_ids: list[str] = []
-            for r in retrieved:
-                doc_id = _CHUNK_SUFFIX_RE.sub("", r.doc_id)
-                if doc_id not in seen:
-                    seen.add(doc_id)
-                    retrieved_doc_ids.append(doc_id)
-            scores = [r.score for r in retrieved]
-
-            # 5. Optional reranking
-            if self._reranker is not None:
-                retrieved_docs: list[dict[str, str]] = []
+                # Deduplicate doc IDs after stripping chunk suffixes, preserving order
+                seen: set[str] = set()
+                retrieved_doc_ids: list[str] = []
+                dedup_scores: list[float] = []
                 for r in retrieved:
-                    if r.doc_id in chunk_lookup:
-                        retrieved_docs.append({
-                            "doc_id": chunk_lookup[r.doc_id]["doc_id"],
-                            "text": chunk_lookup[r.doc_id]["text"],
-                        })
-                    else:
-                        logger.warning(
-                            "Chunk ID '%s' not found in chunk_lookup, skipping",
-                            r.doc_id,
+                    doc_id = _CHUNK_SUFFIX_RE.sub("", r.doc_id)
+                    if doc_id not in seen:
+                        seen.add(doc_id)
+                        retrieved_doc_ids.append(doc_id)
+                        dedup_scores.append(r.score)
+                scores = dedup_scores
+
+                # 5. Optional reranking
+                if self._reranker is not None:
+                    retrieved_docs: list[dict[str, str]] = []
+                    for r in retrieved:
+                        if r.doc_id in chunk_lookup:
+                            retrieved_docs.append({
+                                "doc_id": chunk_lookup[r.doc_id]["doc_id"],
+                                "text": chunk_lookup[r.doc_id]["text"],
+                            })
+                        else:
+                            logger.warning(
+                                "Chunk ID '%s' not found in chunk_lookup, skipping",
+                                r.doc_id,
+                            )
+                    if retrieved_docs:
+                        reranked = rerank_results(
+                            q["text"], retrieved_docs, self._reranker,
+                            top_k=self._reranker_top_k,
                         )
-                if retrieved_docs:
-                    reranked = rerank_results(
-                        q["text"], retrieved_docs, self._reranker,
-                        top_k=self._reranker_top_k,
-                    )
-                    retrieved_doc_ids = [r.doc_id for r in reranked]
-                    scores = [r.score for r in reranked]
+                        retrieved_doc_ids = [r.doc_id for r in reranked]
+                        scores = [r.score for r in reranked]
 
-            query_results.append(QueryResult(
-                query_id=q.get("query_id", ""),
-                query_text=q["text"],
-                retrieved_doc_ids=retrieved_doc_ids,
-                scores=scores,
-                relevant_doc_ids=q.get("relevant_doc_ids", []),
-            ))
+                query_results.append(QueryResult(
+                    query_id=q.get("query_id", ""),
+                    query_text=q["text"],
+                    retrieved_doc_ids=retrieved_doc_ids,
+                    scores=scores,
+                    relevant_doc_ids=q.get("relevant_doc_ids", []),
+                ))
 
-        elapsed = time.perf_counter() - start
-        store.clear()
+            elapsed = time.perf_counter() - start
 
-        return RagResult(
-            query_results=query_results,
-            total_time_seconds=elapsed,
-            used_reranker=self._reranker is not None,
-            num_corpus_chunks=len(all_chunks),
-            embedding_time_seconds=embed_result.total_time_seconds + total_query_embed_time,
-        )
+            return RagResult(
+                query_results=query_results,
+                total_time_seconds=elapsed,
+                used_reranker=self._reranker is not None,
+                num_corpus_chunks=len(all_chunks),
+                embedding_time_seconds=embed_result.total_time_seconds + total_query_embed_time,
+            )
+        finally:
+            store.clear()

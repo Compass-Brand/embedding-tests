@@ -25,10 +25,11 @@ class SentenceTransformerWrapper:
         self._precision = precision
         self._embedding_dim = config.embedding_dim
 
-        if precision.storage_dtype in _QUANTIZED_DTYPES:
+        storage_dtype = precision.storage_dtype.lower()
+        if storage_dtype in _QUANTIZED_DTYPES:
             torch_dtype = torch.float16
-        elif hasattr(torch, precision.storage_dtype):
-            torch_dtype = getattr(torch, precision.storage_dtype)
+        elif hasattr(torch, storage_dtype):
+            torch_dtype = getattr(torch, storage_dtype)
         else:
             raise ValueError(f"Invalid storage dtype: {precision.storage_dtype}")
 

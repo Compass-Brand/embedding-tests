@@ -92,6 +92,7 @@ class VLEmbeddingWrapper:
             # Normalize
             pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
             all_embeddings.append(pooled.cpu().numpy())
+            del hidden, mask, outputs
 
         return np.concatenate(all_embeddings, axis=0)
 

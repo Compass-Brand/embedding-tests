@@ -96,6 +96,8 @@ def load_model_config(path: Path) -> ModelConfig:
 
 def load_all_model_configs(models_dir: Path) -> list[ModelConfig]:
     """Load all model configs from a directory of YAML files."""
+    if not models_dir.is_dir():
+        raise FileNotFoundError(f"Models directory not found: {models_dir}")
     configs: list[ModelConfig] = []
     yaml_files = sorted(
         set(models_dir.glob("*.yaml")) | set(models_dir.glob("*.yml"))

@@ -67,6 +67,9 @@ class TestMRR:
         score = mrr(queries)
         assert score == 0.0
 
+    def test_mrr_empty_queries(self) -> None:
+        assert mrr([]) == 0.0
+
 
 class TestNDCG:
     """Tests for NDCG@k."""

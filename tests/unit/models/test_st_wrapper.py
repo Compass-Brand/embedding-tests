@@ -117,6 +117,35 @@ class TestSTWrapper:
         assert encode_call.kwargs.get("prompt") == "query: "
 
     @patch("embedding_tests.models.st_wrapper.SentenceTransformer")
+    def test_st_wrapper_encode_query_no_instruction(
+        self, mock_st_cls: MagicMock, fp16_precision: PrecisionConfig
+    ) -> None:
+        """When is_query=True but query_instruction is None, prompt should be None."""
+        from embedding_tests.models.st_wrapper import SentenceTransformerWrapper
+
+        config_no_instruction = ModelConfig(
+            name="test-model-no-instr",
+            model_id="org/test-model-no-instr",
+            model_type=ModelType.TEXT_EMBEDDING,
+            params_billions=0.6,
+            embedding_dim=1024,
+            supported_precisions=[PrecisionLevel.FP16],
+            trust_remote_code=True,
+            query_instruction=None,
+            padding_side="left",
+        )
+
+        mock_model = MagicMock()
+        mock_model.encode.return_value = np.array([[1.0, 0.0]])
+        mock_st_cls.return_value = mock_model
+
+        wrapper = SentenceTransformerWrapper(config_no_instruction, fp16_precision)
+        wrapper.encode(["test"], is_query=True)
+
+        encode_call = mock_model.encode.call_args
+        assert encode_call.kwargs.get("prompt") is None
+
+    @patch("embedding_tests.models.st_wrapper.SentenceTransformer")
     def test_st_wrapper_encode_document_no_instruction(
         self, mock_st_cls: MagicMock, model_config: ModelConfig, fp16_precision: PrecisionConfig
     ) -> None:

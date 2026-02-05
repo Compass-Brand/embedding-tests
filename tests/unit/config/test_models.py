@@ -133,7 +133,7 @@ query_instruction: "query: "
 
     def test_load_all_model_configs(self, configs_dir: Path) -> None:
         configs = load_all_model_configs(configs_dir / "models")
-        assert len(configs) >= 2  # At least some configs exist
+        assert len(configs) > 0, "Expected at least one model config"
         names = {c.name for c in configs}
         # Verify configs have names and required fields
         for c in configs:

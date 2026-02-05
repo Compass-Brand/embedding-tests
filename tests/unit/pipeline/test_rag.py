@@ -81,3 +81,23 @@ class TestRagPipeline:
         model = self._make_mock_model()
         with pytest.raises(ValueError, match="chunk_overlap must be less than chunk_size"):
             RagPipeline(embedding_model=model, chunk_size=100, chunk_overlap=100)
+
+    def test_rag_pipeline_rejects_negative_overlap(self) -> None:
+        model = self._make_mock_model()
+        with pytest.raises(ValueError, match="chunk_overlap must be non-negative"):
+            RagPipeline(embedding_model=model, chunk_size=100, chunk_overlap=-1)
+
+    def test_rag_pipeline_rejects_zero_top_k(self) -> None:
+        model = self._make_mock_model()
+        with pytest.raises(ValueError, match="top_k must be positive"):
+            RagPipeline(embedding_model=model, chunk_size=100, top_k=0)
+
+    def test_rag_pipeline_rejects_zero_reranker_top_k(self) -> None:
+        model = self._make_mock_model()
+        with pytest.raises(ValueError, match="reranker_top_k must be positive"):
+            RagPipeline(embedding_model=model, chunk_size=100, reranker_top_k=0)
+
+    def test_rag_pipeline_rejects_zero_embed_batch_size(self) -> None:
+        model = self._make_mock_model()
+        with pytest.raises(ValueError, match="embed_batch_size must be positive"):
+            RagPipeline(embedding_model=model, chunk_size=100, embed_batch_size=0)

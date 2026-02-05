@@ -68,6 +68,7 @@ class VLRerankerWrapper:
             documents,
             padding=True,
             truncation=True,
+            max_length=self._config.max_seq_length,
             return_tensors="pt",
         )
         device = next(self._model.parameters()).device

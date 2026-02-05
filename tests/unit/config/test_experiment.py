@@ -146,6 +146,35 @@ precisions:
         with pytest.raises(ValueError, match="name"):
             load_experiment_config(experiment_yaml, models_dir)
 
+    def test_experiment_config_empty_models_raises(self, tmp_path: Path) -> None:
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        experiment_yaml = tmp_path / "exp.yaml"
+        experiment_yaml.write_text(
+            "name: exp\ndescription: test\nmodels: []\nprecisions:\n  - fp16\n"
+        )
+        with pytest.raises(ValueError, match="models must not be empty"):
+            load_experiment_config(experiment_yaml, models_dir)
+
+    def test_experiment_config_empty_precisions_raises(self, tmp_path: Path) -> None:
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "m.yaml").write_text("""
+name: m
+model_id: org/m
+model_type: text_embedding
+params_billions: 1.0
+embedding_dim: 768
+supported_precisions:
+  - fp16
+""")
+        experiment_yaml = tmp_path / "exp.yaml"
+        experiment_yaml.write_text(
+            "name: exp\ndescription: test\nmodels:\n  - m\nprecisions: []\n"
+        )
+        with pytest.raises(ValueError, match="precisions must not be empty"):
+            load_experiment_config(experiment_yaml, models_dir)
+
     def test_experiment_config_unknown_pipeline_field_raises(self, tmp_path: Path) -> None:
         models_dir = tmp_path / "models"
         models_dir.mkdir()

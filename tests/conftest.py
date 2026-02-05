@@ -38,7 +38,7 @@ def sample_queries(fixtures_dir: Path) -> list[dict[str, Any]]:
         return json.load(f)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def configs_dir() -> Path:
     """Return path to the configs directory."""
     return Path(__file__).parent.parent / "configs"

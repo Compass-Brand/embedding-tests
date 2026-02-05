@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -38,7 +40,20 @@ def save_checkpoint(
         "results": results,
     }
     try:
-        path.write_text(json.dumps(data, indent=2))
+        fd, tmp_path = tempfile.mkstemp(
+            dir=checkpoint_dir, suffix=".tmp", prefix=".checkpoint_"
+        )
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp_path, path)
+        except BaseException:
+            # Clean up temp file on any failure
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
     except OSError as e:
         raise OSError(f"Failed to save checkpoint to {path}: {e}") from e
     return path

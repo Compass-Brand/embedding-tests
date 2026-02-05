@@ -5,6 +5,7 @@ params_billions: 0.6
 embedding_dim: 1024
 supported_precisions:
   - fp16
+  - int8
 trust_remote_code: true
 query_instruction: "query: "
 max_seq_length: 32768

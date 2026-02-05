@@ -24,6 +24,7 @@ class TestRerankingPipeline:
         """Verify reranker properly scores query-document relevance."""
 
         config = load_model_config(configs_dir / "models" / "qwen3_vl_reranker_2b.yaml")
+        assert config.supported_precisions, f"No supported precisions for {config.name}"
         precision = get_precision_config(gpu, config.supported_precisions[0])
         reranker = load_model(config, precision)
 
@@ -37,6 +38,7 @@ class TestRerankingPipeline:
                 "The cat sat on the mat.",
             ]
 
+            # rerank() returns list of (doc_index, score) tuples
             results = reranker.rerank(query, documents, top_k=3)
             assert len(results) == 3
 

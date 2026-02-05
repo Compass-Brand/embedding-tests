@@ -86,6 +86,13 @@ class TestChunkText:
         assert len(chunks) == 1
         assert chunks[0].text == text
 
+    def test_nonpositive_chunk_size_raises(self) -> None:
+        """Verify that chunk_size <= 0 raises ValueError."""
+        with pytest.raises(ValueError, match="chunk_size must be positive"):
+            chunk_text("some text", strategy=ChunkingStrategy.RECURSIVE, chunk_size=0)
+        with pytest.raises(ValueError, match="chunk_size must be positive"):
+            chunk_text("some text", strategy=ChunkingStrategy.RECURSIVE, chunk_size=-10)
+
     def test_overlap_ge_chunk_size_raises(self) -> None:
         """Verify that chunk_overlap >= chunk_size raises ValueError."""
         with pytest.raises(ValueError, match="chunk_overlap.*must be less than chunk_size"):

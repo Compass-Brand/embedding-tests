@@ -106,12 +106,6 @@ class ExperimentRunner:
             if gpu is None:
                 return {"model": name, "precision": prec, "error": "No GPU detected"}
             precision_config = get_precision_config(gpu, precision)
-            if precision_config is None:
-                return {
-                    "model": name,
-                    "precision": prec,
-                    "error": f"Precision {prec} not supported on this GPU",
-                }
 
             model = load_model(model_config, precision_config)
 
