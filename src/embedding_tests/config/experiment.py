@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
@@ -33,11 +34,11 @@ class ExperimentConfig:
 
     name: str
     description: str
-    models: tuple[ModelConfig, ...]
-    precisions: tuple[PrecisionLevel, ...]
+    models: Sequence[ModelConfig]
+    precisions: Sequence[PrecisionLevel]
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
     reranker: str | None = None
-    datasets: tuple[str, ...] = field(default_factory=tuple)
+    datasets: Sequence[str] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "models", tuple(self.models))

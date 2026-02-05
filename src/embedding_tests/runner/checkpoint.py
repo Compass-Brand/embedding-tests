@@ -47,7 +47,7 @@ def save_checkpoint(
             with os.fdopen(fd, "w") as f:
                 json.dump(data, f, indent=2)
             os.replace(tmp_path, path)
-        except BaseException:
+        except Exception:
             # Clean up temp file on any failure
             try:
                 os.unlink(tmp_path)

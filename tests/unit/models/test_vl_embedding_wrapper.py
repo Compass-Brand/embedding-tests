@@ -103,23 +103,27 @@ class TestVLEmbeddingWrapper:
         assert result.shape[0] == 2  # Two input texts
         assert result.shape[1] == 2  # Matches mock hidden state dim
 
-    @patch("embedding_tests.models.vl_embedding_wrapper.torch")
+    @patch("embedding_tests.models.vl_embedding_wrapper.gc.collect")
+    @patch("embedding_tests.models.vl_embedding_wrapper.torch.cuda.is_available", return_value=True)
+    @patch("embedding_tests.models.vl_embedding_wrapper.torch.cuda.empty_cache")
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoTokenizer")
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoModel")
     def test_vl_emb_unload_clears_memory(
         self,
         mock_auto_model: MagicMock,
         mock_tokenizer: MagicMock,
-        mock_torch: MagicMock,
+        mock_empty_cache: MagicMock,
+        mock_is_available: MagicMock,
+        mock_gc_collect: MagicMock,
         vl_model_config: ModelConfig,
         fp16_precision: PrecisionConfig,
     ) -> None:
         from embedding_tests.models.vl_embedding_wrapper import VLEmbeddingWrapper
 
-        mock_torch.cuda.is_available.return_value = True
         wrapper = VLEmbeddingWrapper(vl_model_config, fp16_precision)
         wrapper.unload()
-        mock_torch.cuda.empty_cache.assert_called_once()
+        mock_empty_cache.assert_called_once()
+        mock_gc_collect.assert_called_once()
 
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoTokenizer")
     @patch("embedding_tests.models.vl_embedding_wrapper.AutoModel")

@@ -19,12 +19,18 @@ class RetrievalResult:
 class VectorStore:
     """In-memory vector store backed by ChromaDB."""
 
+    _VALID_METRICS = {"cosine", "l2", "ip"}
+
     def __init__(
         self,
         collection_name: str = "default",
         embedding_dim: int = 768,
         metric: str = "cosine",
     ) -> None:
+        if metric not in self._VALID_METRICS:
+            raise ValueError(
+                f"Invalid metric: {metric!r}. Must be one of {sorted(self._VALID_METRICS)}"
+            )
         self._client = chromadb.Client()
         metadata = {"hnsw:space": metric}
         self._collection = self._client.get_or_create_collection(
@@ -53,6 +59,11 @@ class VectorStore:
 
     def query(self, query_embedding: np.ndarray, top_k: int = 10) -> list[RetrievalResult]:
         """Query for similar documents."""
+        if query_embedding.shape[0] != self._embedding_dim:
+            raise ValueError(
+                f"Query embedding dimension mismatch: expected {self._embedding_dim}, "
+                f"got {query_embedding.shape[0]}"
+            )
         if self._collection.count() == 0:
             return []
 
@@ -78,7 +89,7 @@ class VectorStore:
         elif self._metric == "l2":
             return 1.0 / (1.0 + distance)
         elif self._metric == "ip":
-            return -distance
+            return max(0.0, min(1.0, (1.0 - distance) / 2.0))
         else:
             return 1.0 - distance
 

@@ -11,21 +11,12 @@ from embedding_tests.pipeline.retrieval import VectorStore
 @pytest.fixture(autouse=True)
 def _cleanup_stores():
     """Ensure ChromaDB stores are cleaned up after each test."""
-    stores: list[VectorStore] = []
-    original_init = VectorStore.__init__
-
-    def tracking_init(self, *args, **kwargs):
-        original_init(self, *args, **kwargs)
-        stores.append(self)
-
-    VectorStore.__init__ = tracking_init
     yield
-    VectorStore.__init__ = original_init
-    for store in stores:
-        try:
-            store.clear()
-        except Exception:
-            pass
+    # Reset the shared in-memory ChromaDB state so collection names don't leak
+    import chromadb
+    client = chromadb.Client()
+    for col in client.list_collections():
+        client.delete_collection(col.name)
 
 
 class TestDistanceToScore:
@@ -42,6 +33,37 @@ class TestDistanceToScore:
     def test_cosine_distance_one_returns_half(self) -> None:
         store = VectorStore(collection_name="test_d2s_one", embedding_dim=2, metric="cosine")
         assert store._distance_to_score(1.0) == 0.5
+
+    def test_l2_distance_zero_returns_one(self) -> None:
+        store = VectorStore(collection_name="test_l2_zero", embedding_dim=2, metric="l2")
+        assert store._distance_to_score(0.0) == 1.0
+
+    def test_l2_distance_one_returns_half(self) -> None:
+        store = VectorStore(collection_name="test_l2_one", embedding_dim=2, metric="l2")
+        assert store._distance_to_score(1.0) == 0.5
+
+    def test_ip_distance_returns_normalized_score(self) -> None:
+        store = VectorStore(collection_name="test_ip", embedding_dim=2, metric="ip")
+        # IP normalization: max(0.0, min(1.0, (1.0 - distance) / 2.0))
+        assert store._distance_to_score(1.0) == 0.0
+        assert store._distance_to_score(-1.0) == 1.0
+        assert store._distance_to_score(0.0) == 0.5
+
+
+class TestVectorStoreValidation:
+    """Tests for VectorStore input validation."""
+
+    def test_invalid_metric_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="Invalid metric"):
+            VectorStore(collection_name="bad_metric", embedding_dim=3, metric="hamming")
+
+    def test_query_embedding_dimension_mismatch_raises(self) -> None:
+        store = VectorStore(collection_name="test_qdim", embedding_dim=3)
+        embeddings = np.array([[1.0, 0.0, 0.0]])
+        store.index(embeddings, ["d1"])
+        wrong_dim_query = np.array([1.0, 0.0])  # 2D instead of 3D
+        with pytest.raises(ValueError, match="dimension mismatch"):
+            store.query(wrong_dim_query, top_k=1)
 
 
 class TestVectorStore:

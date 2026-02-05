@@ -40,7 +40,12 @@ def get_precision_config(
         )
 
     if precision == PrecisionLevel.INT4:
-        import torch
+        try:
+            import torch
+        except ImportError as exc:
+            raise ImportError(
+                "PyTorch is required for INT4 quantization but is not installed"
+            ) from exc
 
         return PrecisionConfig(
             storage_dtype="int4",

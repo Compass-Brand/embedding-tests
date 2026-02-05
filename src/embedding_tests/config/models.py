@@ -50,6 +50,8 @@ class ModelConfig:
     def __post_init__(self) -> None:
         if not self.name:
             raise ValueError("Model name cannot be empty")
+        if not self.model_id:
+            raise ValueError("Model ID cannot be empty")
         if self.params_billions <= 0:
             raise ValueError(f"params_billions must be positive, got {self.params_billions}")
         if self.embedding_dim < 0:

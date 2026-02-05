@@ -94,6 +94,17 @@ class TestModelConfig:
                 supported_precisions=[PrecisionLevel.FP16],
             )
 
+    def test_model_config_rejects_empty_model_id(self) -> None:
+        with pytest.raises(ValueError, match="cannot be empty"):
+            ModelConfig(
+                name="test",
+                model_id="",
+                model_type=ModelType.TEXT_EMBEDDING,
+                params_billions=1.0,
+                embedding_dim=768,
+                supported_precisions=[PrecisionLevel.FP16],
+            )
+
     def test_model_config_validation_rejects_negative_params(self) -> None:
         with pytest.raises(ValueError, match="must be positive"):
             ModelConfig(

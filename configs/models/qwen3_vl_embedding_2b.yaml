@@ -6,6 +6,6 @@ embedding_dim: 2048
 supported_precisions:
   - fp16
 trust_remote_code: true
-query_instruction: null
+query_instruction: "Instruct: Represent the query for retrieval\nQuery: "
 max_seq_length: 32768
 padding_side: left

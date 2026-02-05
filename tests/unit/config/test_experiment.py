@@ -178,7 +178,14 @@ supported_precisions:
     def test_experiment_config_unknown_pipeline_field_raises(self, tmp_path: Path) -> None:
         models_dir = tmp_path / "models"
         models_dir.mkdir()
+        (models_dir / "m.yaml").write_text(
+            "name: m\nmodel_id: org/m\nmodel_type: text_embedding\n"
+            "params_billions: 1.0\nembedding_dim: 768\nsupported_precisions:\n  - fp16\n"
+        )
         experiment_yaml = tmp_path / "exp.yaml"
-        experiment_yaml.write_text("name: exp\ndescription: test\nmodels: []\nprecisions: []\npipeline:\n  invalid_field: 123\n")
+        experiment_yaml.write_text(
+            "name: exp\ndescription: test\nmodels:\n  - m\nprecisions:\n  - fp16\n"
+            "pipeline:\n  invalid_field: 123\n"
+        )
         with pytest.raises(ValueError, match="Unknown pipeline"):
             load_experiment_config(experiment_yaml, models_dir)

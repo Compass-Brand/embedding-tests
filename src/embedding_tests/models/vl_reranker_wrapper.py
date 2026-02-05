@@ -63,6 +63,10 @@ class VLRerankerWrapper:
         if not documents:
             return []
 
+        if top_k <= 0:
+            raise ValueError(f"top_k must be positive, got {top_k}")
+        top_k = min(top_k, len(documents))
+
         inputs = self._tokenizer(
             [query] * len(documents),
             documents,

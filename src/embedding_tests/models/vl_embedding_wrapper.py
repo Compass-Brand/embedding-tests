@@ -72,11 +72,16 @@ class VLEmbeddingWrapper:
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
+            tokenizer_kwargs: dict[str, object] = {
+                "padding": True,
+                "truncation": True,
+                "return_tensors": "pt",
+            }
+            if self._config.max_seq_length is not None:
+                tokenizer_kwargs["max_length"] = self._config.max_seq_length
             inputs = self._tokenizer(
                 batch,
-                padding=True,
-                truncation=True,
-                return_tensors="pt",
+                **tokenizer_kwargs,
             )
             device = self._model.get_input_embeddings().weight.device
             inputs = {k: v.to(device) for k, v in inputs.items()}

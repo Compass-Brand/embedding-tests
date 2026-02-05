@@ -41,7 +41,10 @@ def sample_queries(fixtures_dir: Path) -> list[dict[str, Any]]:
 @pytest.fixture(scope="session")
 def configs_dir() -> Path:
     """Return path to the configs directory."""
-    return Path(__file__).parent.parent / "configs"
+    path = Path(__file__).parent.parent / "configs"
+    if not path.exists():
+        pytest.fail(f"Missing configs directory: {path}")
+    return path
 
 
 @pytest.fixture

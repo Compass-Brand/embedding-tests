@@ -48,7 +48,7 @@ class MTEBModelAdapter:
         """Encode corpus documents."""
         texts = []
         for i, doc in enumerate(corpus):
-            text = doc.get("text") if doc.get("text") is not None else doc.get("title") or ""
+            text = doc.get("text") or doc.get("title") or ""
             if not text:
                 logger.warning("Corpus document %d has no 'text' or 'title' field", i)
             texts.append(text)
