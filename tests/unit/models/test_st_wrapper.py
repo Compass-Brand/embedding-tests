@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+import torch
 
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
 from embedding_tests.hardware.precision import PrecisionConfig
@@ -60,7 +61,7 @@ class TestSTWrapper:
         SentenceTransformerWrapper(model_config, fp16_precision)
         call_kwargs = mock_st_cls.call_args
         model_kwargs = call_kwargs.kwargs.get("model_kwargs", {})
-        assert "float16" in str(model_kwargs.get("torch_dtype", ""))
+        assert model_kwargs.get("torch_dtype") == torch.float16
 
     @patch("embedding_tests.models.st_wrapper.SentenceTransformer")
     def test_st_wrapper_init_sets_eager_attention(

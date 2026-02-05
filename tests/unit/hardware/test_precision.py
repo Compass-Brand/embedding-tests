@@ -78,8 +78,8 @@ class TestPrecisionConfigFields:
 
     def test_precision_config_has_required_fields(self, p40_caps: GpuCapabilities) -> None:
         config = get_precision_config(p40_caps, PrecisionLevel.FP16)
-        assert hasattr(config, "storage_dtype")
-        assert hasattr(config, "compute_dtype")
-        assert hasattr(config, "attn_implementation")
-        assert hasattr(config, "use_autocast")
-        assert hasattr(config, "quantization_config")
+        assert isinstance(config.storage_dtype, str)
+        assert isinstance(config.compute_dtype, str)
+        assert isinstance(config.attn_implementation, str)
+        assert isinstance(config.use_autocast, bool)
+        assert config.quantization_config is None or isinstance(config.quantization_config, dict)

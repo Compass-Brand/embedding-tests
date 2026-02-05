@@ -101,6 +101,7 @@ class TestExperimentRunner:
         results = runner.run()
         # FP16 was checkpointed, only INT8 should run fresh
         assert len(results) == 2  # Both results returned (one from checkpoint)
+        assert mock_loader.call_count == 1
 
     @patch("embedding_tests.runner.experiment.load_model")
     @patch("embedding_tests.runner.experiment.get_precision_config")

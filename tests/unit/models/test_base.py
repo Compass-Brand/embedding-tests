@@ -46,12 +46,12 @@ class MockRerankerModel:
 class TestEmbeddingModelProtocol:
     """Tests for EmbeddingModel protocol."""
 
-    def test_embedding_model_protocol_requires_encode(self) -> None:
+    def test_mock_embedding_model_encode_returns_correct_shape(self) -> None:
         model = MockEmbeddingModel()
         result = model.encode(["hello"])
         assert result.shape == (1, 768)
 
-    def test_embedding_model_protocol_requires_get_embedding_dim(self) -> None:
+    def test_mock_embedding_model_returns_embedding_dim(self) -> None:
         model = MockEmbeddingModel()
         assert model.get_embedding_dim() == 768
 
@@ -63,7 +63,7 @@ class TestEmbeddingModelProtocol:
 class TestRerankerModelProtocol:
     """Tests for RerankerModel protocol."""
 
-    def test_reranker_model_protocol_requires_rerank(self) -> None:
+    def test_mock_reranker_model_rerank_returns_results(self) -> None:
         model = MockRerankerModel()
         result = model.rerank("query", ["doc1", "doc2"])
         assert len(result) == 2

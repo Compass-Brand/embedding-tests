@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from embedding_tests.config.hardware import detect_gpu
-from embedding_tests.config.models import ModelConfig, PrecisionLevel
+from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
 from embedding_tests.evaluation.metrics import recall_at_k, precision_at_k
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
@@ -49,6 +49,15 @@ class ExperimentRunner:
 
         for model_config in self._models:
             for precision in self._precisions:
+                # Skip if precision not supported by this model
+                if precision not in model_config.supported_precisions:
+                    logger.warning(
+                        "Skipping %s at %s (not in supported precisions)",
+                        model_config.name,
+                        precision.value,
+                    )
+                    continue
+
                 result = self._run_single(model_config, precision, gpu)
                 results.append(result)
 
@@ -72,12 +81,26 @@ class ExperimentRunner:
 
         logger.info("Running %s at %s precision", name, prec)
 
+        model = None
         try:
             precision_config = get_precision_config(gpu, precision) if gpu else None
             if precision_config is None:
                 return {"model": name, "precision": prec, "error": "No GPU detected"}
 
             model = load_model(model_config, precision_config)
+
+            # Check if model is a reranker (no encode method)
+            if model_config.model_type == ModelType.MULTIMODAL_RERANKER:
+                logger.warning(
+                    "Skipping %s/%s (reranker models not supported in RAG pipeline)",
+                    name,
+                    prec,
+                )
+                return {
+                    "model": name,
+                    "precision": prec,
+                    "error": "Reranker models not supported in RAG pipeline",
+                }
 
             pipeline = RagPipeline(
                 embedding_model=model,
@@ -111,6 +134,6 @@ class ExperimentRunner:
             return {"model": name, "precision": prec, "error": str(e)}
 
         finally:
-            if "model" in locals():
+            if model is not None:
                 model.unload()
             gc.collect()

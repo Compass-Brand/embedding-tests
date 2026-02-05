@@ -1,5 +1,5 @@
 name: kalm-embedding-gemma3-12b
-model_id: HIT-TMG/KaLM-Embedding-Gemma3-12B
+model_id: tencent/KaLM-Embedding-Gemma3-12B-2511
 model_type: text_embedding
 params_billions: 11.76
 embedding_dim: 3840
@@ -8,5 +8,5 @@ supported_precisions:
   - int4
 trust_remote_code: true
 query_instruction: null
-max_seq_length: 8192
+max_seq_length: 32768
 padding_side: left

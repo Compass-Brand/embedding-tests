@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +14,6 @@ def get_checkpoint_path(
     precision: str,
 ) -> Path:
     """Get the checkpoint file path for a model/precision combination."""
-    import re
     safe_name = re.sub(r'[^A-Za-z0-9._-]', '_', model_name)
     return checkpoint_dir / f"{safe_name}_{precision}.json"
 
@@ -34,7 +34,10 @@ def save_checkpoint(
         "status": status,
         "results": results,
     }
-    path.write_text(json.dumps(data, indent=2))
+    try:
+        path.write_text(json.dumps(data, indent=2))
+    except OSError as e:
+        raise IOError(f"Failed to save checkpoint to {path}: {e}") from e
     return path
 
 

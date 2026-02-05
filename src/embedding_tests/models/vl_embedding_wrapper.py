@@ -23,7 +23,9 @@ class VLEmbeddingWrapper:
         self._precision = precision
         self._embedding_dim = config.embedding_dim
 
-        dtype = getattr(torch, precision.storage_dtype, torch.float16)
+        if not hasattr(torch, precision.storage_dtype):
+            raise ValueError(f"Invalid storage dtype: {precision.storage_dtype}")
+        dtype = getattr(torch, precision.storage_dtype)
 
         load_kwargs: dict[str, object] = {
             "torch_dtype": dtype,
@@ -55,6 +57,9 @@ class VLEmbeddingWrapper:
         """Encode texts into embedding vectors."""
         all_embeddings: list[np.ndarray] = []
 
+        if is_query and self._config.query_instruction:
+            texts = [f"{self._config.query_instruction}{t}" for t in texts]
+
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
             inputs = self._tokenizer(
@@ -63,7 +68,8 @@ class VLEmbeddingWrapper:
                 truncation=True,
                 return_tensors="pt",
             )
-            inputs = {k: v.to(self._model.device) for k, v in inputs.items()}
+            device = self._model.get_input_embeddings().weight.device
+            inputs = {k: v.to(device) for k, v in inputs.items()}
 
             with torch.no_grad():
                 outputs = self._model(**inputs)
