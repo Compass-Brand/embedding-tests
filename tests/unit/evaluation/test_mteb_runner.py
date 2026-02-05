@@ -137,6 +137,27 @@ class TestRunMTEBTasks:
         assert result["tasks"] == []
         mock_model.encode.assert_not_called()
 
+    def test_run_mteb_handles_import_error(self, monkeypatch) -> None:
+        """Should return error dict when MTEB is not installed."""
+        import builtins
+
+        original_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "mteb":
+                raise ImportError("No module named 'mteb'")
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", mock_import)
+        mock_model = MagicMock()
+
+        from embedding_tests.evaluation import mteb_runner
+
+        result = mteb_runner.run_mteb_tasks(mock_model, task_types=["Retrieval"])
+
+        assert result == {"tasks": [], "error": "mteb not installed"}
+        mock_model.encode.assert_not_called()
+
 
 class TestMTEBTaskInfo:
     """Tests for MTEB task information."""
@@ -232,3 +253,19 @@ class TestMTEBResultsFormatter:
 
         assert "ndcg_at_10" in formatted["NFCorpus"]
         assert "hf_subset" not in formatted["NFCorpus"]
+
+    def test_format_mteb_results_handles_non_dict_scores(self) -> None:
+        """Should skip non-dict score entries gracefully."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        raw_results = [
+            MagicMock(
+                task_name="NFCorpus",
+                scores={"test": ["not a dict"]},  # Invalid structure
+            )
+        ]
+
+        formatted = format_mteb_results(raw_results)
+
+        # Should not crash, just return empty metrics for this task
+        assert formatted == {}

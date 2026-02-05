@@ -161,6 +161,8 @@ def format_mteb_results(raw_results: list[Any]) -> dict[str, dict[str, float]]:
         )
         if split_scores and isinstance(split_scores, list):
             score_dict = split_scores[0]
+            if not isinstance(score_dict, dict):
+                continue
             for metric_name, value in score_dict.items():
                 if isinstance(value, (int, float)):
                     metrics[metric_name] = float(value)
