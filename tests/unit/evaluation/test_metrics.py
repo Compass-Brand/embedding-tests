@@ -128,3 +128,146 @@ class TestPrecisionAtK:
     def test_precision_at_k_invalid_k_raises(self) -> None:
         with pytest.raises(ValueError, match="k must be positive"):
             precision_at_k(["d1"], {"d1"}, k=0)
+
+
+class TestMeanAveragePrecision:
+    """Tests for Mean Average Precision (MAP)."""
+
+    def test_map_perfect_ranking(self) -> None:
+        """MAP should be 1.0 when all relevant docs are at top positions."""
+        from embedding_tests.evaluation.metrics import mean_average_precision
+
+        # Query with 2 relevant docs at positions 1 and 2
+        queries = [
+            (["d1", "d2", "d3"], {"d1", "d2"}),
+        ]
+        # AP = (1/1 + 2/2) / 2 = 1.0
+        assert mean_average_precision(queries) == pytest.approx(1.0)
+
+    def test_map_worst_ranking(self) -> None:
+        """MAP should be low when relevant docs are at bottom."""
+        from embedding_tests.evaluation.metrics import mean_average_precision
+
+        # Relevant docs at positions 3 and 4
+        queries = [
+            (["d3", "d4", "d1", "d2"], {"d1", "d2"}),
+        ]
+        # AP = (1/3 + 2/4) / 2 = (0.333 + 0.5) / 2 = 0.4167
+        assert mean_average_precision(queries) == pytest.approx(0.4167, abs=0.001)
+
+    def test_map_multiple_queries(self) -> None:
+        """MAP should average across multiple queries."""
+        from embedding_tests.evaluation.metrics import mean_average_precision
+
+        queries = [
+            (["d1", "d2"], {"d1"}),  # AP = 1.0
+            (["d2", "d1"], {"d1"}),  # AP = 1/2 = 0.5
+        ]
+        # MAP = (1.0 + 0.5) / 2 = 0.75
+        assert mean_average_precision(queries) == pytest.approx(0.75)
+
+    def test_map_no_relevant_found(self) -> None:
+        """MAP should be 0 when no relevant docs in retrieved."""
+        from embedding_tests.evaluation.metrics import mean_average_precision
+
+        queries = [
+            (["d3", "d4"], {"d1", "d2"}),
+        ]
+        assert mean_average_precision(queries) == 0.0
+
+    def test_map_empty_queries(self) -> None:
+        """MAP should be 0 for empty query list."""
+        from embedding_tests.evaluation.metrics import mean_average_precision
+
+        assert mean_average_precision([]) == 0.0
+
+
+class TestSuccessAtK:
+    """Tests for Success@k metric."""
+
+    def test_success_at_k_found(self) -> None:
+        """Success@k should be 1.0 when any relevant doc in top-k."""
+        from embedding_tests.evaluation.metrics import success_at_k
+
+        retrieved = ["d2", "d1", "d3"]
+        relevant = {"d1"}
+        assert success_at_k(retrieved, relevant, k=2) == 1.0
+
+    def test_success_at_k_not_found(self) -> None:
+        """Success@k should be 0.0 when no relevant doc in top-k."""
+        from embedding_tests.evaluation.metrics import success_at_k
+
+        retrieved = ["d2", "d3", "d1"]
+        relevant = {"d1"}
+        assert success_at_k(retrieved, relevant, k=2) == 0.0
+
+    def test_success_at_k_at_boundary(self) -> None:
+        """Success@k should find doc at exactly position k."""
+        from embedding_tests.evaluation.metrics import success_at_k
+
+        retrieved = ["d2", "d3", "d1"]
+        relevant = {"d1"}
+        assert success_at_k(retrieved, relevant, k=3) == 1.0
+
+    def test_success_at_k_multiple_relevant(self) -> None:
+        """Success@k is still 1.0 with multiple relevant docs (binary metric)."""
+        from embedding_tests.evaluation.metrics import success_at_k
+
+        retrieved = ["d1", "d2", "d3"]
+        relevant = {"d1", "d2"}
+        assert success_at_k(retrieved, relevant, k=1) == 1.0
+
+    def test_success_at_k_empty_relevant(self) -> None:
+        """Success@k should be 0.0 when no relevant docs specified."""
+        from embedding_tests.evaluation.metrics import success_at_k
+
+        retrieved = ["d1", "d2"]
+        relevant: set[str] = set()
+        assert success_at_k(retrieved, relevant, k=2) == 0.0
+
+    def test_success_at_k_invalid_k_raises(self) -> None:
+        """Success@k should raise for invalid k."""
+        from embedding_tests.evaluation.metrics import success_at_k
+
+        with pytest.raises(ValueError, match="k must be positive"):
+            success_at_k(["d1"], {"d1"}, k=0)
+
+
+class TestRecallAtMultipleK:
+    """Tests for multi-k recall computation."""
+
+    def test_recall_at_multiple_k_all_values(self) -> None:
+        """Should compute recall at multiple k values."""
+        from embedding_tests.evaluation.metrics import recall_at_multiple_k
+
+        retrieved = ["d1", "d2", "d3", "d4", "d5"]
+        relevant = {"d1", "d3", "d5"}
+        k_values = [1, 3, 5]
+
+        result = recall_at_multiple_k(retrieved, relevant, k_values)
+
+        assert result[1] == pytest.approx(1 / 3)  # d1 found
+        assert result[3] == pytest.approx(2 / 3)  # d1, d3 found
+        assert result[5] == pytest.approx(1.0)  # all found
+
+    def test_recall_at_multiple_k_default_values(self) -> None:
+        """Should use default k values (1, 3, 5, 10, 20)."""
+        from embedding_tests.evaluation.metrics import recall_at_multiple_k
+
+        retrieved = ["d1"] * 20
+        relevant = {"d1"}
+
+        result = recall_at_multiple_k(retrieved, relevant)
+
+        assert 1 in result
+        assert 3 in result
+        assert 5 in result
+        assert 10 in result
+        assert 20 in result
+
+    def test_recall_at_multiple_k_empty_k_values(self) -> None:
+        """Should raise for empty k_values list."""
+        from embedding_tests.evaluation.metrics import recall_at_multiple_k
+
+        with pytest.raises(ValueError, match="k_values must not be empty"):
+            recall_at_multiple_k(["d1"], {"d1"}, [])
