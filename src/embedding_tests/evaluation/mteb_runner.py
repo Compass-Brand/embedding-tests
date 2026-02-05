@@ -148,7 +148,9 @@ def format_mteb_results(raw_results: list[Any]) -> dict[str, dict[str, float]]:
         scores = result.scores
 
         # MTEB scores are nested: {"test": [{metric: value, ...}]}
-        # We extract the first score dict from the test split
+        # We extract metrics from the first score dict only. For multilingual
+        # tasks, additional dicts may contain per-language scores, but we
+        # focus on the aggregate which is typically first.
         metrics: dict[str, float] = {}
 
         for split_name, split_scores in scores.items():

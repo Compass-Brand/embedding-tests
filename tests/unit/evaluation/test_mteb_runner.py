@@ -79,14 +79,23 @@ class TestRunMTEBTasks:
         with pytest.raises(ValueError, match="only one of"):
             run_mteb_tasks(mock_model, task_types=["Retrieval"], task_names=["NFCorpus"])
 
-    def test_run_mteb_rejects_empty_selectors(self) -> None:
-        """Should raise if task_types or task_names is empty list."""
+    def test_run_mteb_rejects_empty_task_types(self) -> None:
+        """Should raise if task_types is empty list."""
         from embedding_tests.evaluation.mteb_runner import run_mteb_tasks
 
         mock_model = MagicMock()
 
         with pytest.raises(ValueError, match="must not be empty"):
             run_mteb_tasks(mock_model, task_types=[])
+
+    def test_run_mteb_rejects_empty_task_names(self) -> None:
+        """Should raise if task_names is empty list."""
+        from embedding_tests.evaluation.mteb_runner import run_mteb_tasks
+
+        mock_model = MagicMock()
+
+        with pytest.raises(ValueError, match="must not be empty"):
+            run_mteb_tasks(mock_model, task_names=[])
 
     def test_run_mteb_dry_run_returns_empty(self) -> None:
         """Dry run should return empty results without executing."""
