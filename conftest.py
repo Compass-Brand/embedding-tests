@@ -12,12 +12,25 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "vl: requires VL model dependencies")
 
 
+def _gpu_is_usable() -> bool:
+    """Check if CUDA GPU is available and compatible with this PyTorch build."""
+    if not torch.cuda.is_available():
+        return False
+    try:
+        # Verify the GPU is actually usable by attempting a small tensor op
+        t = torch.zeros(1, device="cuda")
+        del t
+        return True
+    except (RuntimeError, AssertionError):
+        return False
+
+
 def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
-    """Skip GPU tests when no CUDA device is available."""
-    if not torch.cuda.is_available():
-        skip_gpu = pytest.mark.skip(reason="No CUDA GPU available")
+    """Skip GPU tests when no usable CUDA device is available."""
+    if not _gpu_is_usable():
+        skip_gpu = pytest.mark.skip(reason="No usable CUDA GPU available")
         for item in items:
             if "gpu" in item.keywords:
                 item.add_marker(skip_gpu)
