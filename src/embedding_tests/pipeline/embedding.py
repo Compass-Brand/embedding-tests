@@ -1,0 +1,47 @@
+"""Batch embedding pipeline with memory management."""
+
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass
+
+import numpy as np
+
+from embedding_tests.models.base import EmbeddingModel
+
+
+@dataclass
+class EmbeddingResult:
+    """Result of a batch embedding operation."""
+
+    embeddings: np.ndarray
+    total_time_seconds: float
+    num_texts: int
+    batch_size: int
+
+
+def batch_embed(
+    model: EmbeddingModel,
+    texts: list[str],
+    *,
+    batch_size: int = 32,
+    is_query: bool = False,
+) -> EmbeddingResult:
+    """Embed texts in batches with timing."""
+    start = time.perf_counter()
+    all_embeddings: list[np.ndarray] = []
+
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i : i + batch_size]
+        embeddings = model.encode(batch, is_query=is_query, batch_size=batch_size)
+        all_embeddings.append(embeddings)
+
+    elapsed = time.perf_counter() - start
+    combined = np.concatenate(all_embeddings, axis=0) if all_embeddings else np.array([])
+
+    return EmbeddingResult(
+        embeddings=combined,
+        total_time_seconds=elapsed,
+        num_texts=len(texts),
+        batch_size=batch_size,
+    )

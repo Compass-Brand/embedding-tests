@@ -1,0 +1,53 @@
+"""Tests for two-stage reranking pipeline."""
+
+from __future__ import annotations
+
+from unittest.mock import MagicMock
+
+import pytest
+
+from embedding_tests.pipeline.reranking import rerank_results, RerankResult
+
+
+class TestReranking:
+    """Tests for reranking pipeline."""
+
+    def test_rerank_reorders_retrieved_documents(self) -> None:
+        mock_reranker = MagicMock()
+        # Reranker reverses the order
+        mock_reranker.rerank.return_value = [(2, 0.9), (0, 0.7), (1, 0.3)]
+
+        docs = [
+            {"doc_id": "d1", "text": "first doc"},
+            {"doc_id": "d2", "text": "second doc"},
+            {"doc_id": "d3", "text": "third doc"},
+        ]
+        results = rerank_results("test query", docs, mock_reranker, top_k=3)
+        assert results[0].doc_id == "d3"
+        assert results[1].doc_id == "d1"
+
+    def test_rerank_uses_reranker_model_scores(self) -> None:
+        mock_reranker = MagicMock()
+        mock_reranker.rerank.return_value = [(0, 0.95)]
+
+        docs = [{"doc_id": "d1", "text": "a doc"}]
+        results = rerank_results("query", docs, mock_reranker, top_k=1)
+        mock_reranker.rerank.assert_called_once()
+        assert results[0].score == pytest.approx(0.95)
+
+    def test_rerank_returns_top_k_from_larger_candidate_set(self) -> None:
+        mock_reranker = MagicMock()
+        mock_reranker.rerank.return_value = [(0, 0.9), (3, 0.8)]
+
+        docs = [{"doc_id": f"d{i}", "text": f"doc {i}"} for i in range(10)]
+        results = rerank_results("query", docs, mock_reranker, top_k=2)
+        assert len(results) == 2
+
+    def test_rerank_preserves_document_metadata(self) -> None:
+        mock_reranker = MagicMock()
+        mock_reranker.rerank.return_value = [(0, 0.9)]
+
+        docs = [{"doc_id": "d1", "text": "content", "source": "wiki"}]
+        results = rerank_results("query", docs, mock_reranker, top_k=1)
+        assert results[0].doc_id == "d1"
+        assert results[0].metadata.get("source") == "wiki"
