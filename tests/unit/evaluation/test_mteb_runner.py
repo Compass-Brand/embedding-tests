@@ -155,3 +155,36 @@ class TestMTEBResultsFormatter:
         formatted = format_mteb_results([])
 
         assert formatted == {}
+
+    def test_format_mteb_results_prefers_test_split(self) -> None:
+        """Should prefer 'test' split when multiple splits exist."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        raw_results = [
+            MagicMock(
+                task_name="NFCorpus",
+                scores={
+                    "dev": [{"ndcg_at_10": 0.80}],
+                    "test": [{"ndcg_at_10": 0.85}],
+                },
+            )
+        ]
+
+        formatted = format_mteb_results(raw_results)
+
+        assert formatted["NFCorpus"]["ndcg_at_10"] == 0.85  # test split, not dev
+
+    def test_format_mteb_results_falls_back_to_first_split(self) -> None:
+        """Should fall back to first split if 'test' not present."""
+        from embedding_tests.evaluation.mteb_runner import format_mteb_results
+
+        raw_results = [
+            MagicMock(
+                task_name="NFCorpus",
+                scores={"dev": [{"ndcg_at_10": 0.80}]},
+            )
+        ]
+
+        formatted = format_mteb_results(raw_results)
+
+        assert formatted["NFCorpus"]["ndcg_at_10"] == 0.80

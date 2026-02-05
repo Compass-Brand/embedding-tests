@@ -148,17 +148,18 @@ def format_mteb_results(raw_results: list[Any]) -> dict[str, dict[str, float]]:
         scores = result.scores
 
         # MTEB scores are nested: {"test": [{metric: value, ...}]}
-        # We extract metrics from the first score dict only. For multilingual
-        # tasks, additional dicts may contain per-language scores, but we
-        # focus on the aggregate which is typically first.
+        # We prefer the "test" split; fall back to first available split.
+        # For multilingual tasks, each split may have multiple score dicts
+        # (per-language), but we only extract the first (aggregate).
         metrics: dict[str, float] = {}
 
-        for split_name, split_scores in scores.items():
-            if split_scores and isinstance(split_scores, list):
-                score_dict = split_scores[0]
-                for metric_name, value in score_dict.items():
-                    if isinstance(value, (int, float)):
-                        metrics[metric_name] = float(value)
+        # Prefer "test" split; fall back to first available
+        split_scores = scores.get("test") or next(iter(scores.values()), None)
+        if split_scores and isinstance(split_scores, list):
+            score_dict = split_scores[0]
+            for metric_name, value in score_dict.items():
+                if isinstance(value, (int, float)):
+                    metrics[metric_name] = float(value)
 
         if metrics:
             formatted[task_name] = metrics
