@@ -7,6 +7,7 @@ description: Multimodal reranker comparison
 #     - ms_marco
 #     - natural_questions
 models:
+  - qwen3-embedding-0.6b
   - qwen3-vl-reranker-2b
   - qwen3-vl-reranker-8b
 precisions:

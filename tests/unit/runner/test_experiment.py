@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
+from embedding_tests.hardware.precision import PrecisionConfig
 from embedding_tests.runner.experiment import ExperimentRunner
 
 
@@ -44,6 +45,12 @@ class TestExperimentRunner:
         mock_detect.return_value = GpuCapabilities(
             device_name="P40", compute_capability=(6, 1),
             total_vram_gb=24.0, supports_bf16=False, supports_flash_attn2=False,
+        )
+        mock_precision.return_value = PrecisionConfig(
+            storage_dtype="float16",
+            compute_dtype="float32",
+            attn_implementation="eager",
+            use_autocast=False,
         )
         mock_model = MagicMock()
         mock_model.encode.side_effect = lambda texts, **kw: np.ones((len(texts), 1024))
@@ -82,6 +89,12 @@ class TestExperimentRunner:
             device_name="P40", compute_capability=(6, 1),
             total_vram_gb=24.0, supports_bf16=False, supports_flash_attn2=False,
         )
+        mock_precision.return_value = PrecisionConfig(
+            storage_dtype="float16",
+            compute_dtype="float32",
+            attn_implementation="eager",
+            use_autocast=False,
+        )
         mock_model = MagicMock()
         mock_model.encode.side_effect = lambda texts, **kw: np.ones((len(texts), 1024))
         mock_model.get_embedding_dim.return_value = 1024
@@ -119,6 +132,12 @@ class TestExperimentRunner:
         mock_detect.return_value = GpuCapabilities(
             device_name="P40", compute_capability=(6, 1),
             total_vram_gb=24.0, supports_bf16=False, supports_flash_attn2=False,
+        )
+        mock_precision.return_value = PrecisionConfig(
+            storage_dtype="float16",
+            compute_dtype="float32",
+            attn_implementation="eager",
+            use_autocast=False,
         )
         mock_loader.side_effect = RuntimeError("CUDA OOM")
 

@@ -29,6 +29,8 @@ class TestEmbeddingPipeline:
 
         config = load_model_config(configs_dir / "models" / "qwen3_embedding_06b.yaml")
         precision = get_precision_config(gpu, PrecisionLevel.FP16)
+        store = None
+        model = None
         model = load_model(config, precision)
 
         try:
@@ -73,6 +75,8 @@ class TestEmbeddingPipeline:
                 assert recall > 0.0, f"Expected positive recall for query {q['text']!r}"
 
         finally:
-            store.clear()
-            model.unload()
+            if store is not None:
+                store.clear()
+            if model is not None:
+                model.unload()
             torch.cuda.empty_cache()

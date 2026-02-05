@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import chromadb
+import chromadb.errors
 import numpy as np
 
 
@@ -36,8 +37,8 @@ class VectorStore:
         # Delete existing collection to ensure metric consistency
         try:
             self._client.delete_collection(name=collection_name)
-        except Exception:
-            pass
+        except (ValueError, chromadb.errors.NotFoundError):
+            pass  # Collection doesn't exist
         self._collection = self._client.create_collection(
             name=collection_name,
             metadata=metadata,

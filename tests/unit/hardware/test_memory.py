@@ -39,13 +39,16 @@ class TestEstimateVram:
         vram = estimate_vram_gb(params_billions=8.0, precision=PrecisionLevel.AWQ_INT4)
         assert vram == 4.0
 
-
     def test_estimate_vram_raises_for_unsupported_precision(self) -> None:
         from unittest.mock import MagicMock
 
         fake_precision = MagicMock()
-        with pytest.raises((ValueError, KeyError)):
+        with pytest.raises(ValueError):
             estimate_vram_gb(params_billions=8.0, precision=fake_precision)
+
+    def test_estimate_vram_raises_for_negative_params(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            estimate_vram_gb(params_billions=-1.0, precision=PrecisionLevel.FP16)
 
 
 class TestWillModelFit:
@@ -86,3 +89,15 @@ class TestWillModelFit:
             safety_margin_gb=2.0,
         )
         assert fits is False
+
+    def test_will_model_fit_raises_for_negative_params(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            will_model_fit(params_billions=-1.0, precision=PrecisionLevel.FP16, available_vram_gb=24.0)
+
+    def test_will_model_fit_raises_for_negative_vram(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            will_model_fit(params_billions=8.0, precision=PrecisionLevel.FP16, available_vram_gb=-1.0)
+
+    def test_will_model_fit_raises_for_negative_margin(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            will_model_fit(params_billions=8.0, precision=PrecisionLevel.FP16, available_vram_gb=24.0, safety_margin_gb=-1.0)

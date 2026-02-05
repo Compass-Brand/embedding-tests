@@ -84,7 +84,7 @@ class ExperimentRunner:
                     "status": checkpoint.get("status"),
                     "results": checkpoint.get("results"),
                 }
-            return {"model": name, "precision": prec, "skipped": True}
+            return {"model": name, "precision": prec, "status": "skipped", "results": None}
 
         logger.info("Running %s at %s precision", name, prec)
 

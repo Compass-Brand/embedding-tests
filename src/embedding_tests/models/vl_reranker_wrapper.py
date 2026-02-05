@@ -48,6 +48,7 @@ class VLRerankerWrapper:
         self._model = AutoModelForSequenceClassification.from_pretrained(
             config.model_id, **load_kwargs
         )
+        self._model.eval()
         self._tokenizer = AutoTokenizer.from_pretrained(
             config.model_id, trust_remote_code=config.trust_remote_code
         )
@@ -82,11 +83,8 @@ class VLRerankerWrapper:
             device = next(self._model.parameters()).device
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        orig_training = self._model.training
-        self._model.eval()
         with torch.no_grad():
             outputs = self._model(**inputs)
-        self._model.train(orig_training)
 
         logits = outputs.logits.squeeze(-1)
         if logits.dim() == 0:
@@ -100,8 +98,8 @@ class VLRerankerWrapper:
 
     def unload(self) -> None:
         """Release GPU memory."""
-        del self._model
-        del self._tokenizer
+        self._model = None
+        self._tokenizer = None
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

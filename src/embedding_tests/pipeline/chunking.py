@@ -35,6 +35,9 @@ def chunk_text(
 ) -> list[ChunkMetadata]:
     """Split text into chunks using the specified strategy.
 
+    For the SENTENCE strategy, sentence boundaries are approximated using
+    ". " as the primary separator rather than NLP-based segmentation.
+
     For the TOKEN strategy, ``chunk_size`` and ``chunk_overlap`` are measured
     in word counts (using ``str.split()``) rather than character counts.
     """
