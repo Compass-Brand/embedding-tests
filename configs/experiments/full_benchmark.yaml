@@ -1,0 +1,20 @@
+name: full-benchmark
+description: Complete benchmark of all models at all supported precisions
+models:
+  - qwen3-embedding-0.6b
+  - qwen3-embedding-4b
+  - qwen3-embedding-8b
+  - llama-embed-nemotron-8b
+  - octen-embedding-8b
+  - kalm-embedding-gemma3-12b
+  - qwen3-vl-embedding-2b
+  - qwen3-vl-embedding-8b
+precisions:
+  - fp16
+  - int8
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10
+  reranker_top_k: 3
+reranker: qwen3-vl-reranker-2b

@@ -1,0 +1,17 @@
+name: text-embeddings
+description: All text embedding models at FP16 and INT8
+models:
+  - qwen3-embedding-0.6b
+  - qwen3-embedding-4b
+  - qwen3-embedding-8b
+  - llama-embed-nemotron-8b
+  - octen-embedding-8b
+  - kalm-embedding-gemma3-12b
+precisions:
+  - fp16
+  - int8
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10
+  reranker_top_k: 3

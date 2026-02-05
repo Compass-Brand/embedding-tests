@@ -1,0 +1,12 @@
+name: rerankers
+description: Multimodal reranker comparison
+models:
+  - qwen3-vl-reranker-2b
+  - qwen3-vl-reranker-8b
+precisions:
+  - fp16
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 100
+  reranker_top_k: 10

@@ -1,0 +1,11 @@
+name: multimodal
+description: Multimodal VL embedding models
+models:
+  - qwen3-vl-embedding-2b
+  - qwen3-vl-embedding-8b
+precisions:
+  - fp16
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10

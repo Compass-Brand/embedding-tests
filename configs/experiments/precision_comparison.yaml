@@ -1,0 +1,13 @@
+name: precision-comparison
+description: Compare FP16 vs INT8 vs INT4 for 8B models
+models:
+  - qwen3-embedding-8b
+  - llama-embed-nemotron-8b
+precisions:
+  - fp16
+  - int8
+  - int4
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10
