@@ -1,0 +1,14 @@
+name: full-beir-large
+description: Massive BEIR datasets (multi-million docs, run overnight, ~50GB)
+datasets:
+  - hotpotqa      # 5.2M docs, 7.4K queries
+  - nq            # 2.6M docs, 3.4K queries
+  - msmarco       # 8.8M docs, 6.9K queries
+models:
+  - qwen3-embedding-0.6b  # Start with smallest model for memory efficiency
+precisions:
+  - fp16
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10

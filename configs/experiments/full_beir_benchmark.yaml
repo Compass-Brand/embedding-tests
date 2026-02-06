@@ -1,0 +1,20 @@
+name: full-beir-benchmark
+description: Full BEIR benchmark (medium datasets, ~75GB, excludes massive datasets)
+datasets:
+  - nfcorpus      # 3.6K docs, 323 queries
+  - scifact       # 5K docs, 300 queries
+  - fiqa          # 57K docs, 648 queries
+  - arguana       # 8.6K docs, 1.4K queries
+  - scidocs       # 25K docs, 1K queries
+  - trec-covid    # 171K docs, 50 queries
+models:
+  - qwen3-embedding-0.6b
+  - qwen3-embedding-4b
+  - qwen3-embedding-8b
+precisions:
+  - fp16
+  - int8
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10

@@ -1,14 +1,17 @@
 name: code-retrieval
-description: Code documentation retrieval benchmark using CodeSearchNet and CQADupStack
+description: CodeSearchNet benchmark across all 6 programming languages
 datasets:
   - codesearchnet-python
-  - cqadupstack-programmers
+  - codesearchnet-java
+  - codesearchnet-javascript
+  - codesearchnet-go
+  - codesearchnet-php
+  - codesearchnet-ruby
 models:
   - qwen3-embedding-4b
   - qwen3-embedding-8b
 precisions:
   - fp16
-  - int8
 pipeline:
   chunk_size: 1024
   chunk_overlap: 100
