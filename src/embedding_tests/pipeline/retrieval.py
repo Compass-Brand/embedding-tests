@@ -46,8 +46,16 @@ class VectorStore:
         self._embedding_dim = embedding_dim
         self._metric = metric
 
-    def index(self, embeddings: np.ndarray, doc_ids: list[str]) -> None:
-        """Add embeddings to the store."""
+    def index(
+        self, embeddings: np.ndarray, doc_ids: list[str], batch_size: int = 5000
+    ) -> None:
+        """Add embeddings to the store.
+
+        Args:
+            embeddings: Embedding vectors as numpy array.
+            doc_ids: List of document IDs corresponding to embeddings.
+            batch_size: Maximum batch size for ChromaDB inserts (default 5000).
+        """
         if embeddings.shape[0] != len(doc_ids):
             raise ValueError(
                 f"Number of embeddings ({embeddings.shape[0]}) must match "
@@ -58,10 +66,17 @@ class VectorStore:
                 f"Embedding dimension mismatch: expected {self._embedding_dim}, "
                 f"got {embeddings.shape[1]}"
             )
-        self._collection.add(
-            embeddings=embeddings.tolist(),
-            ids=doc_ids,
-        )
+
+        # Batch inserts to avoid ChromaDB max batch size limit
+        n_total = embeddings.shape[0]
+        for start_idx in range(0, n_total, batch_size):
+            end_idx = min(start_idx + batch_size, n_total)
+            batch_embeddings = embeddings[start_idx:end_idx]
+            batch_ids = doc_ids[start_idx:end_idx]
+            self._collection.add(
+                embeddings=batch_embeddings.tolist(),
+                ids=batch_ids,
+            )
 
     def query(self, query_embedding: np.ndarray, top_k: int = 10) -> list[RetrievalResult]:
         """Query for similar documents."""
