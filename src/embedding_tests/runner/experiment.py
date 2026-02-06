@@ -9,7 +9,18 @@ from typing import Any
 
 from embedding_tests.config.hardware import GpuCapabilities, detect_gpu
 from embedding_tests.config.models import ModelConfig, ModelType, PrecisionLevel
-from embedding_tests.evaluation.metrics import mrr, ndcg_at_k, precision_at_k, recall_at_k
+from embedding_tests.evaluation.metrics import (
+    compute_aggregate_stats,
+    f1_at_k,
+    mean_average_precision,
+    mean_success_at_k,
+    mrr,
+    ndcg_at_k,
+    precision_at_k,
+    r_precision,
+    recall_at_k,
+    success_at_k,
+)
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 from embedding_tests.pipeline.rag import RagPipeline
@@ -130,37 +141,99 @@ class ExperimentRunner:
             )
             rag_result = pipeline.run(self._corpus, self._queries)
 
+            # Define k values for multi-k metrics
+            k_values = [1, 3, 5, 10, 20]
+
             # Compute metrics per query
-            metrics: dict[str, Any] = {}
+            per_query_metrics: dict[str, Any] = {}
             mrr_inputs: list[tuple[list[str], set[str]]] = []
+
+            # Collectors for aggregate statistics
+            recall_scores: dict[int, list[float]] = {k: [] for k in k_values}
+            precision_scores: dict[int, list[float]] = {k: [] for k in k_values}
+            ndcg_scores: dict[int, list[float]] = {k: [] for k in k_values}
+            f1_scores: dict[int, list[float]] = {k: [] for k in k_values}
+            r_precision_scores: list[float] = []
+
             for qr in rag_result.query_results:
                 relevant = set(qr.relevant_doc_ids)
-                r_k = recall_at_k(qr.retrieved_doc_ids, relevant, k=self._top_k)
-                p_k = precision_at_k(qr.retrieved_doc_ids, relevant, k=self._top_k)
-                # For NDCG, treat relevant docs as having relevance=1.0
                 relevance_scores = {doc_id: 1.0 for doc_id in qr.relevant_doc_ids}
-                ndcg = ndcg_at_k(qr.retrieved_doc_ids, relevance_scores, k=self._top_k)
-                metrics[qr.query_id] = {
-                    f"recall_at_{self._top_k}": r_k,
-                    f"precision_at_{self._top_k}": p_k,
-                    f"ndcg_at_{self._top_k}": ndcg,
-                }
+
+                query_metrics: dict[str, Any] = {}
+
+                # Compute metrics at multiple k values
+                for k in k_values:
+                    r_k = recall_at_k(qr.retrieved_doc_ids, relevant, k=k)
+                    p_k = precision_at_k(qr.retrieved_doc_ids, relevant, k=k)
+                    ndcg = ndcg_at_k(qr.retrieved_doc_ids, relevance_scores, k=k)
+                    f1 = f1_at_k(qr.retrieved_doc_ids, relevant, k=k)
+                    s_k = success_at_k(qr.retrieved_doc_ids, relevant, k=k)
+
+                    query_metrics[f"recall_at_{k}"] = r_k
+                    query_metrics[f"precision_at_{k}"] = p_k
+                    query_metrics[f"ndcg_at_{k}"] = ndcg
+                    query_metrics[f"f1_at_{k}"] = f1
+                    query_metrics[f"success_at_{k}"] = s_k
+
+                    # Collect for aggregation
+                    recall_scores[k].append(r_k)
+                    precision_scores[k].append(p_k)
+                    ndcg_scores[k].append(ndcg)
+                    f1_scores[k].append(f1)
+
+                # R-Precision (single value per query)
+                r_prec = r_precision(qr.retrieved_doc_ids, relevant)
+                query_metrics["r_precision"] = r_prec
+                r_precision_scores.append(r_prec)
+
+                per_query_metrics[qr.query_id] = query_metrics
                 mrr_inputs.append((qr.retrieved_doc_ids, relevant))
 
-            # Compute MRR across all queries
+            # Compute aggregate metrics across all queries
             mrr_score = mrr(mrr_inputs)
+            map_score = mean_average_precision(mrr_inputs)
+
+            # Build aggregate statistics
+            aggregate: dict[str, Any] = {
+                "mrr": mrr_score,
+                "map": map_score,
+                "r_precision": compute_aggregate_stats(r_precision_scores),
+            }
+
+            # Add per-k aggregate statistics
+            for k in k_values:
+                aggregate[f"recall_at_{k}"] = compute_aggregate_stats(recall_scores[k])
+                aggregate[f"precision_at_{k}"] = compute_aggregate_stats(precision_scores[k])
+                aggregate[f"ndcg_at_{k}"] = compute_aggregate_stats(ndcg_scores[k])
+                aggregate[f"f1_at_{k}"] = compute_aggregate_stats(f1_scores[k])
+                aggregate[f"success_at_{k}"] = mean_success_at_k(mrr_inputs, k=k)
+
+            # Performance metrics
+            performance = {
+                "total_time_seconds": rag_result.total_time_seconds,
+                "embedding_time_seconds": rag_result.embedding_time_seconds,
+                "num_corpus_chunks": rag_result.num_corpus_chunks,
+                "num_queries": len(rag_result.query_results),
+                "queries_per_second": len(rag_result.query_results) / rag_result.total_time_seconds
+                if rag_result.total_time_seconds > 0
+                else 0.0,
+            }
 
             result = {
                 "model": name,
                 "precision": prec,
                 "status": "completed",
-                "results": metrics,
+                "results": per_query_metrics,
+                "aggregate": aggregate,
+                "performance": performance,
+                # Keep top-level for backward compatibility
                 "mrr": mrr_score,
+                "map": map_score,
                 "total_time": rag_result.total_time_seconds,
             }
 
             save_checkpoint(
-                self._checkpoint_dir, name, prec, "completed", metrics,
+                self._checkpoint_dir, name, prec, "completed", per_query_metrics,
                 mrr=mrr_score, total_time=rag_result.total_time_seconds
             )
             return result

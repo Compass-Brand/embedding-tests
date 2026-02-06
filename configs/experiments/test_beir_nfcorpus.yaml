@@ -1,0 +1,12 @@
+name: test-beir-nfcorpus
+description: Test run with full NFCorpus BEIR dataset (3.6K docs)
+datasets:
+  - nfcorpus
+models:
+  - qwen3-embedding-0.6b
+precisions:
+  - fp16
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10
