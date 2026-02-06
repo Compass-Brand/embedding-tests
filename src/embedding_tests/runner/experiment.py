@@ -13,7 +13,7 @@ from embedding_tests.evaluation.metrics import mrr, ndcg_at_k, precision_at_k, r
 from embedding_tests.hardware.precision import get_precision_config
 from embedding_tests.models.loader import load_model
 from embedding_tests.pipeline.rag import RagPipeline
-from embedding_tests.runner.checkpoint import is_completed, load_checkpoint, save_checkpoint
+from embedding_tests.runner.checkpoint import clear_checkpoints, is_completed, load_checkpoint, save_checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,7 @@ class ExperimentRunner:
         top_k: int = 10,
         chunk_size: int = 512,
         chunk_overlap: int = 50,
+        clear_on_success: bool = False,
     ) -> None:
         self._models = model_configs
         self._precisions = precisions
@@ -41,6 +42,7 @@ class ExperimentRunner:
         self._top_k = top_k
         self._chunk_size = chunk_size
         self._chunk_overlap = chunk_overlap
+        self._clear_on_success = clear_on_success
 
     def run(self) -> list[dict[str, Any]]:
         """Run all model/precision combinations."""
@@ -60,6 +62,13 @@ class ExperimentRunner:
 
                 result = self._run_single(model_config, precision, gpu)
                 results.append(result)
+
+        # Clear checkpoints if all runs completed successfully
+        if self._clear_on_success and results:
+            all_completed = all(r.get("status") == "completed" for r in results)
+            if all_completed:
+                cleared = clear_checkpoints(self._checkpoint_dir)
+                logger.info("Cleared %d checkpoints after successful run", cleared)
 
         return results
 

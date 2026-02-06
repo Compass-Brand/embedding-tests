@@ -95,3 +95,26 @@ def is_completed(
     if checkpoint is None:
         return False
     return checkpoint.get("status") == "completed"
+
+
+def clear_checkpoints(checkpoint_dir: Path) -> int:
+    """Clear all checkpoint files from a directory.
+
+    Args:
+        checkpoint_dir: Directory containing checkpoint files.
+
+    Returns:
+        Number of checkpoint files deleted.
+    """
+    if not checkpoint_dir.exists():
+        return 0
+
+    count = 0
+    for cp_file in checkpoint_dir.glob("*.json"):
+        try:
+            cp_file.unlink()
+            count += 1
+        except OSError as e:
+            logger.warning("Failed to delete checkpoint %s: %s", cp_file, e)
+
+    return count

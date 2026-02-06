@@ -125,3 +125,63 @@ class TestCheckpoint:
         assert loaded is not None
         assert loaded["mrr"] == 0.85
         assert loaded["total_time"] == 1.234
+
+
+class TestClearCheckpoints:
+    """Tests for clear_checkpoints function."""
+
+    def test_clear_checkpoints_removes_all_json_files(self, tmp_path: Path) -> None:
+        """Test that clear_checkpoints removes all checkpoint JSON files."""
+        from embedding_tests.runner.checkpoint import clear_checkpoints
+
+        cp_path = tmp_path / "checkpoints"
+        cp_path.mkdir(parents=True)
+
+        # Create some checkpoint files
+        (cp_path / "model1_fp16.json").write_text('{"status": "completed"}')
+        (cp_path / "model2_int8.json").write_text('{"status": "completed"}')
+        (cp_path / "model3_fp16.json").write_text('{"status": "failed"}')
+
+        count = clear_checkpoints(cp_path)
+
+        assert count == 3
+        assert list(cp_path.glob("*.json")) == []
+
+    def test_clear_checkpoints_returns_zero_for_empty_dir(self, tmp_path: Path) -> None:
+        """Test that clear_checkpoints returns 0 for empty directory."""
+        from embedding_tests.runner.checkpoint import clear_checkpoints
+
+        cp_path = tmp_path / "checkpoints"
+        cp_path.mkdir(parents=True)
+
+        count = clear_checkpoints(cp_path)
+
+        assert count == 0
+
+    def test_clear_checkpoints_handles_nonexistent_dir(self, tmp_path: Path) -> None:
+        """Test that clear_checkpoints handles non-existent directory."""
+        from embedding_tests.runner.checkpoint import clear_checkpoints
+
+        cp_path = tmp_path / "nonexistent"
+
+        count = clear_checkpoints(cp_path)
+
+        assert count == 0
+
+    def test_clear_checkpoints_preserves_non_json_files(self, tmp_path: Path) -> None:
+        """Test that clear_checkpoints only removes .json files."""
+        from embedding_tests.runner.checkpoint import clear_checkpoints
+
+        cp_path = tmp_path / "checkpoints"
+        cp_path.mkdir(parents=True)
+
+        # Create json and non-json files
+        (cp_path / "model_fp16.json").write_text('{}')
+        (cp_path / "notes.txt").write_text('keep me')
+        (cp_path / "config.yaml").write_text('keep me too')
+
+        count = clear_checkpoints(cp_path)
+
+        assert count == 1
+        assert (cp_path / "notes.txt").exists()
+        assert (cp_path / "config.yaml").exists()
