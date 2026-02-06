@@ -204,3 +204,39 @@ class TestCoIRDatasetLoader:
         assert is_coir_dataset("codesearchnet-java")
         assert not is_coir_dataset("python")
         assert not is_coir_dataset("sample")
+
+    @patch("embedding_tests.config.coir_datasets.hf_load_dataset")
+    def test_load_coir_passes_cache_dir(self, mock_load: MagicMock) -> None:
+        """Should pass cache_dir to hf_load_dataset."""
+        from pathlib import Path
+
+        from embedding_tests.config.coir_datasets import load_coir_dataset
+
+        mock_corpus = MagicMock()
+        mock_corpus.__iter__ = lambda self: iter([{"_id": "func1", "text": "code"}])
+        mock_corpus.__len__ = lambda self: 1
+
+        mock_queries = MagicMock()
+        mock_queries.__iter__ = lambda self: iter([{"_id": "q1", "text": "query"}])
+        mock_queries.__len__ = lambda self: 1
+
+        mock_qrels = MagicMock()
+        mock_qrels.__iter__ = lambda self: iter([])
+
+        def side_effect(name, subset=None, **kwargs):
+            if subset and "corpus" in subset:
+                return {"train": mock_corpus}
+            elif subset and "queries" in subset:
+                return {"train": mock_queries}
+            elif subset and "qrels" in subset:
+                return {"train": mock_qrels}
+            return {}
+
+        mock_load.side_effect = side_effect
+
+        cache_dir = Path("/custom/cache")
+        load_coir_dataset("codesearchnet-python", cache_dir=cache_dir)
+
+        # All three calls should include cache_dir
+        for call_args in mock_load.call_args_list:
+            assert call_args.kwargs.get("cache_dir") == str(cache_dir)

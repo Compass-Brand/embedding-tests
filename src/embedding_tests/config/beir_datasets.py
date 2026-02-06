@@ -8,6 +8,7 @@ See: https://github.com/beir-cellar/beir
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,7 @@ def load_beir_dataset(
     name: str,
     *,
     split: str = "test",
+    cache_dir: Path | None = None,
     max_corpus: int | None = None,
     max_queries: int | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -132,16 +134,19 @@ def load_beir_dataset(
 
     logger.info("Loading BEIR dataset %s from %s", name, hf_name)
 
+    # Convert cache_dir to string for HuggingFace
+    cache_dir_str = str(cache_dir) if cache_dir else None
+
     # Load corpus - usually has 'train' split containing all docs
-    corpus_ds = load_dataset(hf_name, "corpus")
+    corpus_ds = load_dataset(hf_name, "corpus", cache_dir=cache_dir_str)
     corpus_split = corpus_ds.get("train", corpus_ds.get(list(corpus_ds.keys())[0]))
 
     # Load queries - usually has 'queries' split
-    queries_ds = load_dataset(hf_name, "queries")
+    queries_ds = load_dataset(hf_name, "queries", cache_dir=cache_dir_str)
     queries_split = queries_ds.get("queries", queries_ds.get(list(queries_ds.keys())[0]))
 
     # Load qrels (default config has train/dev/test splits)
-    qrels_ds = load_dataset(hf_name, "default")
+    qrels_ds = load_dataset(hf_name, "default", cache_dir=cache_dir_str)
     qrels_split = qrels_ds.get(split)
     if qrels_split is None:
         available_splits = list(qrels_ds.keys())

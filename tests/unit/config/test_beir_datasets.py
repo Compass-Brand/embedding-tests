@@ -71,9 +71,9 @@ class TestBEIRDatasetLoader:
 
         # Verify load_dataset was called for each config
         assert mock_load.call_count == 3
-        mock_load.assert_any_call("mteb/nfcorpus", "corpus")
-        mock_load.assert_any_call("mteb/nfcorpus", "queries")
-        mock_load.assert_any_call("mteb/nfcorpus", "default")
+        mock_load.assert_any_call("mteb/nfcorpus", "corpus", cache_dir=None)
+        mock_load.assert_any_call("mteb/nfcorpus", "queries", cache_dir=None)
+        mock_load.assert_any_call("mteb/nfcorpus", "default", cache_dir=None)
 
         assert len(corpus) == 2
         assert corpus[0]["doc_id"] == "doc1"
@@ -256,3 +256,27 @@ class TestBEIRDatasetLoader:
 
         assert corpus[0]["doc_id"] == "doc1"
         assert queries[0]["query_id"] == "q1"
+
+    @patch("datasets.load_dataset")
+    def test_load_beir_passes_cache_dir(self, mock_load: MagicMock) -> None:
+        """Should pass cache_dir to load_dataset."""
+        from pathlib import Path
+
+        from embedding_tests.config.beir_datasets import load_beir_dataset
+
+        mock_corpus = self._create_mock_dataset([{"_id": "doc1", "title": "", "text": "Text"}])
+        mock_queries = self._create_mock_dataset([{"_id": "q1", "text": "Query"}])
+        mock_qrels = self._create_mock_dataset([])
+
+        mock_load.side_effect = [
+            {"train": mock_corpus},
+            {"queries": mock_queries},
+            {"test": mock_qrels},
+        ]
+
+        cache_dir = Path("/custom/cache")
+        load_beir_dataset("nfcorpus", cache_dir=cache_dir)
+
+        # All three calls should include cache_dir
+        for call_args in mock_load.call_args_list:
+            assert call_args.kwargs.get("cache_dir") == str(cache_dir)

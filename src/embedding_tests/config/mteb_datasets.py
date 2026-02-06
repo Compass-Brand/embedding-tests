@@ -7,6 +7,8 @@ See: https://github.com/embeddings-benchmark/mteb
 from __future__ import annotations
 
 import logging
+import os
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,7 @@ def load_mteb_dataset(
     name: str,
     *,
     split: str = "test",
+    cache_dir: Path | None = None,
     max_corpus: int | None = None,
     max_queries: int | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -79,6 +82,10 @@ def load_mteb_dataset(
 
     task_name = MTEB_RETRIEVAL_TASKS[name]
     logger.info("Loading MTEB task %s (%s)", name, task_name)
+
+    # MTEB uses HF_DATASETS_CACHE env var for cache location
+    if cache_dir:
+        os.environ["HF_DATASETS_CACHE"] = str(cache_dir)
 
     import mteb
 

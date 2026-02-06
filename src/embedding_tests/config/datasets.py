@@ -126,6 +126,7 @@ def load_dataset(
     name: str | None = None,
     *,
     data_dir: Path | None = None,
+    cache_dir: Path | None = None,
     max_corpus: int | None = None,
     max_queries: int | None = None,
     split: str = "test",
@@ -159,25 +160,25 @@ def load_dataset(
     # NanoBEIR datasets
     if is_nanobeir_dataset(name):
         return load_nanobeir_dataset(
-            name, max_corpus=max_corpus, max_queries=max_queries
+            name, cache_dir=cache_dir, max_corpus=max_corpus, max_queries=max_queries
         )
 
     # BEIR datasets
     if is_beir_dataset(name):
         return load_beir_dataset(
-            name, split=split, max_corpus=max_corpus, max_queries=max_queries
+            name, split=split, cache_dir=cache_dir, max_corpus=max_corpus, max_queries=max_queries
         )
 
     # CoIR (CodeSearchNet) datasets
     if is_coir_dataset(name):
         return load_coir_dataset(
-            name, split=split, max_corpus=max_corpus, max_queries=max_queries
+            name, split=split, cache_dir=cache_dir, max_corpus=max_corpus, max_queries=max_queries
         )
 
     # MTEB retrieval datasets
     if is_mteb_dataset(name):
         return load_mteb_dataset(
-            name, split=split, max_corpus=max_corpus, max_queries=max_queries
+            name, split=split, cache_dir=cache_dir, max_corpus=max_corpus, max_queries=max_queries
         )
 
     # Local dataset (fallback)

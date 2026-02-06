@@ -159,3 +159,55 @@ class TestUnifiedDatasetRouting:
             from embedding_tests.config.datasets import load_dataset
             load_dataset("cqadupstack-programmers")
             mock.assert_called_once()
+
+
+class TestCacheDirRouting:
+    """Tests for cache_dir parameter routing to sub-loaders."""
+
+    def test_routes_cache_dir_to_nanobeir(self) -> None:
+        from pathlib import Path
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_nanobeir_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            cache_dir = Path("/custom/cache")
+            load_dataset("nano-nfcorpus", cache_dir=cache_dir)
+            mock.assert_called_once()
+            assert mock.call_args.kwargs.get("cache_dir") == cache_dir
+
+    def test_routes_cache_dir_to_beir(self) -> None:
+        from pathlib import Path
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_beir_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            cache_dir = Path("/custom/cache")
+            load_dataset("nfcorpus", cache_dir=cache_dir)
+            mock.assert_called_once()
+            assert mock.call_args.kwargs.get("cache_dir") == cache_dir
+
+    def test_routes_cache_dir_to_coir(self) -> None:
+        from pathlib import Path
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_coir_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            cache_dir = Path("/custom/cache")
+            load_dataset("codesearchnet-python", cache_dir=cache_dir)
+            mock.assert_called_once()
+            assert mock.call_args.kwargs.get("cache_dir") == cache_dir
+
+    def test_routes_cache_dir_to_mteb(self) -> None:
+        from pathlib import Path
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_mteb_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            cache_dir = Path("/custom/cache")
+            load_dataset("cqadupstack-programmers", cache_dir=cache_dir)
+            mock.assert_called_once()
+            assert mock.call_args.kwargs.get("cache_dir") == cache_dir

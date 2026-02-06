@@ -226,3 +226,35 @@ class TestMTEBDatasetLoader:
 
         with pytest.raises(ValueError, match="No data found"):
             load_mteb_dataset("cqadupstack-programmers")
+
+    @patch.dict("os.environ", {}, clear=True)
+    @patch("mteb.get_tasks")
+    def test_load_mteb_sets_cache_dir_env(self, mock_get_tasks: MagicMock) -> None:
+        """Should set HF_DATASETS_CACHE env var when cache_dir is provided."""
+        import os
+        from pathlib import Path
+
+        from embedding_tests.config.mteb_datasets import load_mteb_dataset
+
+        mock_task = MagicMock()
+        mock_task.dataset = {
+            "default": {
+                "test": {
+                    "corpus": self._create_mock_corpus([
+                        {"id": "doc1", "title": "", "text": "Text"},
+                    ]),
+                    "queries": self._create_mock_queries([
+                        {"id": "q1", "text": "Query"},
+                    ]),
+                    "relevant_docs": {},
+                }
+            }
+        }
+
+        mock_get_tasks.return_value = [mock_task]
+
+        cache_dir = Path("/custom/cache")
+        load_mteb_dataset("cqadupstack-programmers", cache_dir=cache_dir)
+
+        # Env var should have been set
+        assert os.environ.get("HF_DATASETS_CACHE") == str(cache_dir)

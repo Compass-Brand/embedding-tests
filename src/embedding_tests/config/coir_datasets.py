@@ -7,6 +7,7 @@ See: https://github.com/CoIR-team/coir
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -63,16 +64,23 @@ def list_coir_datasets() -> list[dict[str, str]]:
     ]
 
 
-def hf_load_dataset(name: str, subset: str | None = None, **kwargs: Any) -> Any:
+def hf_load_dataset(
+    name: str,
+    subset: str | None = None,
+    *,
+    cache_dir: str | None = None,
+    **kwargs: Any,
+) -> Any:
     """Wrapper for HuggingFace datasets.load_dataset for easier mocking."""
     from datasets import load_dataset
-    return load_dataset(name, subset, **kwargs)
+    return load_dataset(name, subset, cache_dir=cache_dir, **kwargs)
 
 
 def load_coir_dataset(
     name: str,
     *,
     split: str = "train",
+    cache_dir: Path | None = None,
     max_corpus: int | None = None,
     max_queries: int | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -102,10 +110,13 @@ def load_coir_dataset(
 
     logger.info("Loading CoIR dataset %s from %s", name, hf_name)
 
+    # Convert cache_dir to string for HuggingFace
+    cache_dir_str = str(cache_dir) if cache_dir else None
+
     # Load corpus, queries, and qrels with language-specific subsets
-    corpus_ds = hf_load_dataset(hf_name, subset=f"{prefix}-corpus")
-    queries_ds = hf_load_dataset(hf_name, subset=f"{prefix}-queries")
-    qrels_ds = hf_load_dataset(hf_name, subset=f"{prefix}-qrels")
+    corpus_ds = hf_load_dataset(hf_name, subset=f"{prefix}-corpus", cache_dir=cache_dir_str)
+    queries_ds = hf_load_dataset(hf_name, subset=f"{prefix}-queries", cache_dir=cache_dir_str)
+    qrels_ds = hf_load_dataset(hf_name, subset=f"{prefix}-qrels", cache_dir=cache_dir_str)
 
     # Convert corpus to our format
     corpus = _convert_corpus(corpus_ds[split], max_corpus)

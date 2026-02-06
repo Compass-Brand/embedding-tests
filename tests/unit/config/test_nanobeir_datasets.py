@@ -74,9 +74,9 @@ class TestNanoBEIRDatasetLoader:
 
         # Verify hf_load_dataset was called for each config
         assert mock_load.call_count == 3
-        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "corpus")
-        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "queries")
-        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "qrels")
+        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "corpus", cache_dir=None)
+        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "queries", cache_dir=None)
+        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "qrels", cache_dir=None)
 
         assert len(corpus) == 2
         assert corpus[0]["doc_id"] == "doc1"
@@ -229,3 +229,27 @@ class TestNanoBEIRDatasetLoader:
 
         assert corpus[0]["doc_id"] == "doc1"
         assert queries[0]["query_id"] == "q1"
+
+    @patch("embedding_tests.config.nanobeir_datasets.hf_load_dataset")
+    def test_load_nanobeir_passes_cache_dir(self, mock_load: MagicMock) -> None:
+        """Should pass cache_dir to hf_load_dataset."""
+        from pathlib import Path
+
+        from embedding_tests.config.nanobeir_datasets import load_nanobeir_dataset
+
+        mock_corpus = self._create_mock_dataset([{"_id": "doc1", "text": "Text"}])
+        mock_queries = self._create_mock_dataset([{"_id": "q1", "text": "Query"}])
+        mock_qrels = self._create_mock_dataset([])
+
+        mock_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},
+            {"NanoNFCorpus": mock_queries},
+            {"NanoNFCorpus": mock_qrels},
+        ]
+
+        cache_dir = Path("/custom/cache")
+        load_nanobeir_dataset("nano-nfcorpus", cache_dir=cache_dir)
+
+        # All three calls should include cache_dir
+        for call_args in mock_load.call_args_list:
+            assert call_args.kwargs.get("cache_dir") == str(cache_dir)
