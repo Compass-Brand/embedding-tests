@@ -48,9 +48,9 @@ class TestChunkText:
             if i < len(chunks) - 1:
                 assert stripped[-1].isalnum() or stripped.endswith(".")
 
-    def test_token_chunking_produces_chunks(self) -> None:
+    def test_word_count_chunking_produces_chunks(self) -> None:
         text = "word " * 200
-        chunks = chunk_text(text, strategy=ChunkingStrategy.TOKEN, chunk_size=50, chunk_overlap=10)
+        chunks = chunk_text(text, strategy=ChunkingStrategy.WORD_COUNT, chunk_size=50, chunk_overlap=10)
         assert len(chunks) > 1
 
     def test_chunking_preserves_all_content(self) -> None:

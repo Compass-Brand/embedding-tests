@@ -13,7 +13,7 @@ class ChunkingStrategy(Enum):
 
     RECURSIVE = "recursive"
     SENTENCE = "sentence"
-    TOKEN = "token"  # Uses word count (len(text.split())) as proxy for tokens
+    WORD_COUNT = "word_count"  # Uses word count (len(text.split())) as proxy for tokens
 
 
 @dataclass
@@ -38,7 +38,7 @@ def chunk_text(
     For the SENTENCE strategy, sentence boundaries are approximated using
     ". " as the primary separator rather than NLP-based segmentation.
 
-    For the TOKEN strategy, ``chunk_size`` and ``chunk_overlap`` are measured
+    For the WORD_COUNT strategy, ``chunk_size`` and ``chunk_overlap`` are measured
     in word counts (using ``str.split()``) rather than character counts.
     """
     if chunk_size <= 0:
@@ -58,7 +58,7 @@ def chunk_text(
             splitter_kwargs["separators"] = ["\n\n", "\n", ". ", " ", ""]
         case ChunkingStrategy.SENTENCE:
             splitter_kwargs["separators"] = [". ", "\n\n", "\n", " ", ""]
-        case ChunkingStrategy.TOKEN:
+        case ChunkingStrategy.WORD_COUNT:
             # Word count is a rough proxy for tokens; for precise counting, integrate a model tokenizer
             splitter_kwargs["length_function"] = lambda t: len(t.split())
         case _:
