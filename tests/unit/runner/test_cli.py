@@ -115,6 +115,33 @@ class TestCLI:
         assert result.exit_code == 1
         assert "not found" in result.stdout.lower()
 
+    @patch("embedding_tests.runner.cli.load_dataset")
+    @patch("embedding_tests.runner.cli.ExperimentRunner")
+    @patch("embedding_tests.runner.cli.load_experiment_config")
+    def test_cli_run_clear_checkpoints_flag(
+        self,
+        mock_load: MagicMock,
+        mock_runner: MagicMock,
+        mock_dataset: MagicMock,
+    ) -> None:
+        """Test that --clear-checkpoints flag is passed to ExperimentRunner."""
+        mock_config = MagicMock()
+        mock_config.models = []
+        mock_config.precisions = []
+        mock_config.datasets = ["sample"]
+        mock_config.pipeline = MagicMock()
+        mock_config.name = "test_experiment"
+        mock_load.return_value = mock_config
+        mock_dataset.return_value = ([], [])
+        mock_runner_instance = MagicMock()
+        mock_runner_instance.run.return_value = []
+        mock_runner.return_value = mock_runner_instance
+
+        result = runner.invoke(app, ["run", "configs/experiments/quick_sanity.yaml", "--clear-checkpoints"])
+        assert result.exit_code == 0
+        # Verify clear_on_success=True was passed
+        assert mock_runner.call_args.kwargs.get("clear_on_success") is True
+
     def test_cli_report_command_help(self) -> None:
         result = runner.invoke(app, ["report", "--help"])
         assert result.exit_code == 0
@@ -265,6 +292,37 @@ class TestCLIDownload:
         result = runner.invoke(app, ["download", "totally_fake_dataset"])
         assert result.exit_code == 1
         assert "not found" in result.stdout.lower()
+
+    @patch("embedding_tests.runner.cli.load_dataset")
+    def test_download_all_with_category(self, mock_load: MagicMock) -> None:
+        """Test downloading all datasets in a category."""
+        mock_load.return_value = (
+            [{"doc_id": "d1", "text": "doc"}],
+            [{"query_id": "q1", "text": "q", "relevant_doc_ids": ["d1"]}],
+        )
+        result = runner.invoke(app, ["download", "all", "--category", "nano"])
+        assert result.exit_code == 0
+        # Should download all 6 nano datasets
+        assert mock_load.call_count == 6
+        assert "nano-nfcorpus" in result.stdout
+
+    @patch("embedding_tests.runner.cli.load_dataset")
+    def test_download_all_downloads_all_datasets(self, mock_load: MagicMock) -> None:
+        """Test downloading all datasets without category filter."""
+        mock_load.return_value = (
+            [{"doc_id": "d1", "text": "doc"}],
+            [{"query_id": "q1", "text": "q", "relevant_doc_ids": ["d1"]}],
+        )
+        result = runner.invoke(app, ["download", "all"])
+        assert result.exit_code == 0
+        # Should download many datasets (34 total - 1 sample = 33 HF datasets)
+        assert mock_load.call_count >= 30
+
+    def test_download_invalid_category(self) -> None:
+        """Test error on invalid category."""
+        result = runner.invoke(app, ["download", "all", "--category", "invalid"])
+        assert result.exit_code == 1
+        assert "unknown category" in result.stdout.lower()
 
 
 class TestCLIMTEB:

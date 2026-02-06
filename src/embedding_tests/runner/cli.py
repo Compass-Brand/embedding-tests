@@ -33,6 +33,10 @@ DATA_DIR = Path(os.environ.get("EMB_TEST_DATA_DIR", str(_PACKAGE_ROOT / "data"))
 def run(
     config: str = typer.Argument(..., help="Path to experiment config YAML"),
     checkpoint_dir: str = typer.Option("checkpoints", help="Checkpoint directory"),
+    clear_checkpoints: bool = typer.Option(
+        False, "--clear-checkpoints",
+        help="Clear checkpoints after successful completion",
+    ),
 ) -> None:
     """Run an experiment from a config file."""
     config_path = Path(config)
@@ -58,6 +62,7 @@ def run(
         top_k=experiment.pipeline.retrieval_top_k,
         chunk_size=experiment.pipeline.chunk_size,
         chunk_overlap=experiment.pipeline.chunk_overlap,
+        clear_on_success=clear_checkpoints,
     )
     results = runner.run()
     console.print(f"[green]Completed {len(results)} combinations[/green]")
@@ -134,25 +139,58 @@ def datasets(
 
 @app.command()
 def download(
-    dataset: str = typer.Argument(..., help="Dataset name to download"),
+    dataset: str = typer.Argument(..., help="Dataset name or 'all' to download all"),
     output_dir: Optional[str] = typer.Option(
         None,
         "--output", "-o",
         help="Output directory (default: data/)",
     ),
+    category: Optional[str] = typer.Option(
+        None,
+        "--category", "-c",
+        help="Category filter when using 'all': nano, beir, code, technical",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Re-download even if already cached",
+    ),
 ) -> None:
-    """Pre-download a dataset for offline use."""
-    out_path = Path(output_dir) if output_dir else DATA_DIR
+    """Pre-download datasets for offline use.
 
+    Use 'all' as the dataset name to download all datasets, optionally
+    filtered by category.
+
+    Examples:
+        emb-test download nfcorpus              # Single dataset
+        emb-test download all                   # ALL datasets
+        emb-test download all --category nano   # All NanoBEIR datasets
+        emb-test download all --category beir   # All BEIR datasets
+    """
+    from embedding_tests.config.cache import ensure_cache_dir, get_cache_dir
+
+    # Determine cache directory
+    cache_dir = get_cache_dir()
+    if output_dir:
+        cache_dir = Path(output_dir) / "hf_cache"
+    ensure_cache_dir(cache_dir)
+
+    if dataset == "all":
+        _download_all_datasets(cache_dir, category)
+    else:
+        _download_single_dataset(dataset, cache_dir)
+
+
+def _download_single_dataset(dataset: str, cache_dir: Path) -> None:
+    """Download a single dataset."""
     console.print(f"[cyan]Downloading dataset: {dataset}[/cyan]")
 
     try:
-        corpus, queries = load_dataset(dataset, data_dir=out_path)
+        corpus, queries = load_dataset(dataset, cache_dir=cache_dir)
         console.print(f"[green]Downloaded {dataset}[/green]")
         console.print(f"  Corpus: {len(corpus)} documents")
         console.print(f"  Queries: {len(queries)} queries")
 
-        # Check how many queries have relevance judgments
         queries_with_qrels = sum(1 for q in queries if q.get("relevant_doc_ids"))
         console.print(f"  Queries with qrels: {queries_with_qrels}")
 
@@ -162,6 +200,44 @@ def download(
     except ValueError as e:
         console.print(f"[red]Error loading dataset: {e}[/red]")
         raise typer.Exit(1) from None
+
+
+def _download_all_datasets(cache_dir: Path, category: Optional[str]) -> None:
+    """Download all datasets, optionally filtered by category."""
+    try:
+        all_datasets = list_all_datasets(category=category)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1) from None
+
+    # Filter out 'sample' as it's local fixtures
+    hf_datasets = [d for d in all_datasets if d["name"] != "sample"]
+
+    if not hf_datasets:
+        console.print("[yellow]No datasets to download[/yellow]")
+        raise typer.Exit(0)
+
+    console.print(
+        f"[cyan]Downloading {len(hf_datasets)} datasets"
+        f"{f' ({category})' if category else ''}[/cyan]"
+    )
+
+    success_count = 0
+    fail_count = 0
+
+    for ds in hf_datasets:
+        ds_name = ds["name"]
+        try:
+            corpus, queries = load_dataset(ds_name, cache_dir=cache_dir)
+            console.print(f"  [green]{ds_name}[/green]: {len(corpus)} docs, {len(queries)} queries")
+            success_count += 1
+        except Exception as e:
+            console.print(f"  [red]{ds_name}[/red]: {e}")
+            fail_count += 1
+
+    console.print(f"\n[green]Downloaded {success_count} datasets[/green]")
+    if fail_count > 0:
+        console.print(f"[red]Failed: {fail_count} datasets[/red]")
 
 
 @app.command()
