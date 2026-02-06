@@ -12,6 +12,23 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 # Available BEIR datasets with HuggingFace names and metadata
+def is_beir_dataset(name: str) -> bool:
+    """Check if a dataset name is a BEIR dataset."""
+    return name in BEIR_DATASETS
+
+
+def list_beir_datasets() -> list[dict[str, Any]]:
+    """List all available BEIR datasets.
+
+    Returns:
+        List of dicts with dataset info.
+    """
+    return [
+        {"name": name, **info}
+        for name, info in BEIR_DATASETS.items()
+    ]
+
+
 BEIR_DATASETS: dict[str, dict[str, Any]] = {
     "nfcorpus": {
         "hf_name": "BeIR/nfcorpus",

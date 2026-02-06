@@ -7,6 +7,6 @@ supported_precisions:  # fp16 excluded: 12B at FP16 = ~23.5GB, exceeds P40's pra
   - int8
   - int4
 trust_remote_code: true
-query_instruction: null
+query_instruction: "Instruct: Given a query, retrieve documents that answer the query\nQuery: "
 max_seq_length: 32768
 padding_side: left

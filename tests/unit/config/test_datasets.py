@@ -84,3 +84,78 @@ class TestLoadDataset:
 
         corpus, queries = load_dataset()
         assert len(corpus) == 10  # Same as sample
+
+
+class TestListAllDatasets:
+    """Tests for list_all_datasets function."""
+
+    def test_list_all_datasets_includes_all_types(self) -> None:
+        from embedding_tests.config.datasets import list_all_datasets
+
+        datasets = list_all_datasets()
+        # Should include sample, nano, beir, code, technical
+        names = {d["name"] for d in datasets}
+        assert "sample" in names
+        assert "nano-nfcorpus" in names
+        assert "nfcorpus" in names
+        assert "codesearchnet-python" in names
+        assert "cqadupstack-programmers" in names
+
+    def test_list_all_datasets_with_category_filter(self) -> None:
+        from embedding_tests.config.datasets import list_all_datasets
+
+        nano_datasets = list_all_datasets(category="nano")
+        assert all(d["category"] == "nano" for d in nano_datasets)
+        assert all(d["name"].startswith("nano-") for d in nano_datasets)
+
+    def test_list_all_datasets_invalid_category_raises(self) -> None:
+        from embedding_tests.config.datasets import list_all_datasets
+
+        with pytest.raises(ValueError, match="Unknown category"):
+            list_all_datasets(category="invalid")
+
+    def test_list_all_datasets_has_description(self) -> None:
+        from embedding_tests.config.datasets import list_all_datasets
+
+        datasets = list_all_datasets()
+        assert all("description" in d for d in datasets)
+
+
+class TestUnifiedDatasetRouting:
+    """Tests for unified dataset routing."""
+
+    def test_routes_nanobeir_dataset(self) -> None:
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_nanobeir_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            load_dataset("nano-nfcorpus")
+            mock.assert_called_once()
+
+    def test_routes_beir_dataset(self) -> None:
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_beir_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            load_dataset("nfcorpus")
+            mock.assert_called_once()
+
+    def test_routes_coir_dataset(self) -> None:
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_coir_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            load_dataset("codesearchnet-python")
+            mock.assert_called_once()
+
+    def test_routes_mteb_dataset(self) -> None:
+        from unittest.mock import patch
+
+        with patch("embedding_tests.config.datasets.load_mteb_dataset") as mock:
+            mock.return_value = ([], [])
+            from embedding_tests.config.datasets import load_dataset
+            load_dataset("cqadupstack-programmers")
+            mock.assert_called_once()
