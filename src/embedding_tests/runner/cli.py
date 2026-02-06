@@ -3,26 +3,30 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from embedding_tests.config.datasets import load_dataset
+from embedding_tests.config.datasets import list_all_datasets, load_dataset
 from embedding_tests.config.experiment import load_experiment_config
 from embedding_tests.config.models import load_all_model_configs
 from embedding_tests.runner.experiment import ExperimentRunner
 
 app = typer.Typer(name="emb-test", help="Embedding model testing framework")
 console = Console()
+logger = logging.getLogger(__name__)
 
 # Navigate from src/embedding_tests/runner/cli.py to project root
 _PACKAGE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 CONFIGS_DIR = Path(os.environ.get("EMB_TEST_CONFIGS_DIR", str(_PACKAGE_ROOT / "configs")))
 MODELS_DIR = Path(os.environ.get("EMB_TEST_MODELS_DIR", str(CONFIGS_DIR / "models")))
 RESULTS_DIR = Path(os.environ.get("EMB_TEST_RESULTS_DIR", str(_PACKAGE_ROOT / "results")))
+DATA_DIR = Path(os.environ.get("EMB_TEST_DATA_DIR", str(_PACKAGE_ROOT / "data")))
 
 
 @app.command()
@@ -42,8 +46,7 @@ def run(
 
     # Load dataset(s) - use first specified or default to sample
     dataset_name = experiment.datasets[0] if experiment.datasets else None
-    data_dir = _PACKAGE_ROOT / "data"
-    corpus, queries = load_dataset(dataset_name, data_dir=data_dir)
+    corpus, queries = load_dataset(dataset_name, data_dir=DATA_DIR)
     console.print(f"Dataset: {dataset_name or 'sample'} ({len(corpus)} docs, {len(queries)} queries)")
 
     runner = ExperimentRunner(
@@ -92,6 +95,167 @@ def list_models() -> None:
         )
 
     console.print(table)
+
+
+@app.command()
+def datasets(
+    category: Optional[str] = typer.Option(
+        None,
+        "--category", "-c",
+        help="Filter by category: nano, beir, code, technical, scientific",
+    ),
+) -> None:
+    """List all available datasets."""
+    try:
+        all_datasets = list_all_datasets(category=category)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1) from None
+
+    if not all_datasets:
+        console.print("[yellow]No datasets found[/yellow]")
+        raise typer.Exit(0)
+
+    table = Table(title=f"Available Datasets{f' ({category})' if category else ''}")
+    table.add_column("Name", style="cyan")
+    table.add_column("Category")
+    table.add_column("Description")
+
+    for ds in all_datasets:
+        table.add_row(
+            ds["name"],
+            ds.get("category", ""),
+            ds.get("description", ""),
+        )
+
+    console.print(table)
+    console.print(f"\n[dim]Total: {len(all_datasets)} datasets[/dim]")
+
+
+@app.command()
+def download(
+    dataset: str = typer.Argument(..., help="Dataset name to download"),
+    output_dir: Optional[str] = typer.Option(
+        None,
+        "--output", "-o",
+        help="Output directory (default: data/)",
+    ),
+) -> None:
+    """Pre-download a dataset for offline use."""
+    out_path = Path(output_dir) if output_dir else DATA_DIR
+
+    console.print(f"[cyan]Downloading dataset: {dataset}[/cyan]")
+
+    try:
+        corpus, queries = load_dataset(dataset, data_dir=out_path)
+        console.print(f"[green]Downloaded {dataset}[/green]")
+        console.print(f"  Corpus: {len(corpus)} documents")
+        console.print(f"  Queries: {len(queries)} queries")
+
+        # Check how many queries have relevance judgments
+        queries_with_qrels = sum(1 for q in queries if q.get("relevant_doc_ids"))
+        console.print(f"  Queries with qrels: {queries_with_qrels}")
+
+    except FileNotFoundError as e:
+        console.print(f"[red]Dataset not found: {e}[/red]")
+        raise typer.Exit(1) from None
+    except ValueError as e:
+        console.print(f"[red]Error loading dataset: {e}[/red]")
+        raise typer.Exit(1) from None
+
+
+@app.command()
+def mteb(
+    config: str = typer.Argument(..., help="Experiment config YAML"),
+    tasks: Optional[str] = typer.Option(
+        None,
+        "--tasks", "-t",
+        help="Comma-separated MTEB task names (overrides config)",
+    ),
+    output_dir: Optional[str] = typer.Option(
+        None,
+        "--output", "-o",
+        help="Output directory for results",
+    ),
+) -> None:
+    """Run MTEB benchmark evaluation.
+
+    Uses MTEB's native evaluation framework for standard benchmarks.
+    """
+    config_path = Path(config)
+    if not config_path.exists():
+        console.print(f"[red]Config not found: {config_path}[/red]")
+        raise typer.Exit(1)
+
+    experiment = load_experiment_config(config_path, MODELS_DIR)
+    console.print(f"[green]Running MTEB benchmark: {experiment.name}[/green]")
+
+    # Parse task names
+    task_names: list[str] | None = None
+    if tasks:
+        task_names = [t.strip() for t in tasks.split(",")]
+    elif hasattr(experiment, "mteb_tasks") and experiment.mteb_tasks:
+        task_names = list(experiment.mteb_tasks)
+
+    if not task_names:
+        console.print("[red]No MTEB tasks specified. Use --tasks or add mteb_tasks to config.[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"Tasks: {', '.join(task_names)}")
+    console.print(f"Models: {len(experiment.models)}")
+
+    from embedding_tests.config.hardware import detect_gpu
+    from embedding_tests.evaluation.mteb_runner import MTEBModelAdapter, run_mteb_tasks
+    from embedding_tests.hardware.precision import get_precision_config
+    from embedding_tests.models.loader import load_model
+
+    gpu = detect_gpu()
+    if gpu is None:
+        console.print("[red]No GPU detected. MTEB requires GPU.[/red]")
+        raise typer.Exit(1)
+
+    out_path = Path(output_dir) if output_dir else RESULTS_DIR / "mteb"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    all_results = []
+
+    for model_config in experiment.models:
+        for precision in experiment.precisions:
+            if precision not in model_config.supported_precisions:
+                continue
+
+            console.print(f"\n[cyan]Evaluating {model_config.name} at {precision.value}[/cyan]")
+
+            try:
+                precision_config = get_precision_config(gpu, precision)
+                model = load_model(model_config, precision_config)
+
+                mteb_result = run_mteb_tasks(
+                    model,
+                    task_names=task_names,
+                )
+
+                all_results.append({
+                    "model": model_config.name,
+                    "precision": precision.value,
+                    "tasks": mteb_result.get("tasks", []),
+                    "results": mteb_result.get("results"),
+                })
+
+                model.unload()
+
+            except Exception as e:
+                logger.error("Failed %s/%s: %s", model_config.name, precision.value, e)
+                all_results.append({
+                    "model": model_config.name,
+                    "precision": precision.value,
+                    "error": str(e),
+                })
+
+    # Save results
+    output_file = out_path / f"{experiment.name}_mteb.json"
+    output_file.write_text(json.dumps(all_results, indent=2), encoding="utf-8")
+    console.print(f"\n[green]Results saved to {output_file}[/green]")
 
 
 @app.command()

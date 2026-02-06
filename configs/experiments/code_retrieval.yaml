@@ -1,0 +1,15 @@
+name: code-retrieval
+description: Code documentation retrieval benchmark using CodeSearchNet and CQADupStack
+datasets:
+  - codesearchnet-python
+  - cqadupstack-programmers
+models:
+  - qwen3-embedding-4b
+  - qwen3-embedding-8b
+precisions:
+  - fp16
+  - int8
+pipeline:
+  chunk_size: 1024
+  chunk_overlap: 100
+  retrieval_top_k: 10

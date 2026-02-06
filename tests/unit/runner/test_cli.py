@@ -211,3 +211,79 @@ class TestCLI:
         content = report_path.read_text()
         assert "model-a" in content
         assert "recall@10" in content
+
+
+class TestCLIDatasets:
+    """Tests for datasets command."""
+
+    def test_datasets_command_lists_all(self) -> None:
+        from rich.console import Console
+
+        wide_console = Console(width=200)
+        with patch("embedding_tests.runner.cli.console", wide_console):
+            result = runner.invoke(app, ["datasets"])
+        assert result.exit_code == 0
+        assert "sample" in result.stdout
+        assert "nano-nfcorpus" in result.stdout
+        assert "nfcorpus" in result.stdout
+        assert "codesearchnet-python" in result.stdout
+
+    def test_datasets_command_filter_by_category(self) -> None:
+        from rich.console import Console
+
+        wide_console = Console(width=200)
+        with patch("embedding_tests.runner.cli.console", wide_console):
+            result = runner.invoke(app, ["datasets", "--category", "nano"])
+        assert result.exit_code == 0
+        assert "nano-nfcorpus" in result.stdout
+        # Should NOT have non-nano datasets
+        assert "codesearchnet-python" not in result.stdout
+
+    def test_datasets_command_invalid_category(self) -> None:
+        result = runner.invoke(app, ["datasets", "--category", "invalid"])
+        assert result.exit_code == 1
+        assert "unknown category" in result.stdout.lower()
+
+
+class TestCLIDownload:
+    """Tests for download command."""
+
+    @patch("embedding_tests.runner.cli.load_dataset")
+    def test_download_command_success(self, mock_load: MagicMock) -> None:
+        mock_load.return_value = (
+            [{"doc_id": "d1", "text": "doc"}] * 100,
+            [{"query_id": "q1", "text": "q", "relevant_doc_ids": ["d1"]}] * 10,
+        )
+        result = runner.invoke(app, ["download", "nano-nfcorpus"])
+        assert result.exit_code == 0
+        assert "downloaded" in result.stdout.lower()
+        assert "100 documents" in result.stdout.lower()
+        assert "10 queries" in result.stdout.lower()
+
+    def test_download_command_not_found(self) -> None:
+        # This will trigger the local dataset path which doesn't exist
+        result = runner.invoke(app, ["download", "totally_fake_dataset"])
+        assert result.exit_code == 1
+        assert "not found" in result.stdout.lower()
+
+
+class TestCLIMTEB:
+    """Tests for mteb command."""
+
+    def test_mteb_command_missing_config(self) -> None:
+        result = runner.invoke(app, ["mteb", "/nonexistent/config.yaml"])
+        assert result.exit_code == 1
+        assert "not found" in result.stdout.lower()
+
+    @patch("embedding_tests.runner.cli.load_experiment_config")
+    def test_mteb_command_no_tasks_specified(self, mock_load: MagicMock) -> None:
+        mock_config = MagicMock()
+        mock_config.name = "test"
+        mock_config.models = []
+        mock_config.precisions = []
+        mock_config.mteb_tasks = []
+        mock_load.return_value = mock_config
+
+        result = runner.invoke(app, ["mteb", "configs/experiments/quick_sanity.yaml"])
+        assert result.exit_code == 1
+        assert "no mteb tasks" in result.stdout.lower()

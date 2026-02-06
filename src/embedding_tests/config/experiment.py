@@ -39,11 +39,13 @@ class ExperimentConfig:
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
     reranker: str | None = None
     datasets: Sequence[str] = field(default_factory=tuple)
+    mteb_tasks: Sequence[str] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "models", tuple(self.models))
         object.__setattr__(self, "precisions", tuple(self.precisions))
         object.__setattr__(self, "datasets", tuple(self.datasets))
+        object.__setattr__(self, "mteb_tasks", tuple(self.mteb_tasks))
         if not self.models:
             raise ValueError("models must not be empty")
         if not self.precisions:
@@ -111,4 +113,5 @@ def load_experiment_config(
         pipeline=pipeline,
         reranker=data.get("reranker"),
         datasets=tuple(data.get("datasets", [])),
+        mteb_tasks=tuple(data.get("mteb_tasks", [])),
     )

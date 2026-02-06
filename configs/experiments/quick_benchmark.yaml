@@ -1,0 +1,14 @@
+name: quick-benchmark
+description: Fast benchmark with NanoBEIR datasets for development and CI
+datasets:
+  - nano-nfcorpus
+  - nano-scifact
+  - nano-fiqa
+models:
+  - qwen3-embedding-0.6b
+precisions:
+  - fp16
+pipeline:
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 10
