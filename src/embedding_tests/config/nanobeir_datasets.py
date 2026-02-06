@@ -2,7 +2,7 @@
 
 Loads small benchmark datasets from sentence-transformers collection.
 These are fast to download and run, ideal for development and CI.
-See: https://huggingface.co/collections/sentence-transformers/nanobeir-datasets
+See: https://huggingface.co/datasets/sentence-transformers/NanoBEIR-en
 """
 
 from __future__ import annotations
@@ -12,14 +12,18 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Map short names to HuggingFace dataset names
+# NanoBEIR datasets are stored in a single HF dataset with splits
+# The HF dataset is "sentence-transformers/NanoBEIR-en"
+NANOBEIR_HF_DATASET = "sentence-transformers/NanoBEIR-en"
+
+# Map our short names to HF config names (splits within the dataset)
 NANOBEIR_DATASETS: dict[str, str] = {
-    "nano-nfcorpus": "sentence-transformers/NanoNFCorpus",
-    "nano-scifact": "sentence-transformers/NanoSciFact",
-    "nano-fiqa": "sentence-transformers/NanoFiQA2018",
-    "nano-arguana": "sentence-transformers/NanoArguAna",
-    "nano-scidocs": "sentence-transformers/NanoSCIDOCS",
-    "nano-quora": "sentence-transformers/NanoQuoraRetrieval",
+    "nano-nfcorpus": "NanoNFCorpus",
+    "nano-scifact": "NanoSciFact",
+    "nano-fiqa": "NanoFiQA2018",
+    "nano-arguana": "NanoArguAna",
+    "nano-scidocs": "NanoSCIDOCS",
+    "nano-quora": "NanoQuoraRetrieval",
 }
 
 
@@ -40,10 +44,10 @@ def list_nanobeir_datasets() -> list[dict[str, str]]:
     ]
 
 
-def hf_load_dataset(name: str, **kwargs: Any) -> Any:
+def hf_load_dataset(name: str, config_name: str | None = None, **kwargs: Any) -> Any:
     """Wrapper for HuggingFace datasets.load_dataset for easier mocking."""
     from datasets import load_dataset
-    return load_dataset(name, **kwargs)
+    return load_dataset(name, config_name, **kwargs)
 
 
 def load_nanobeir_dataset(
@@ -53,6 +57,15 @@ def load_nanobeir_dataset(
     max_queries: int | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load a NanoBEIR dataset from HuggingFace.
+
+    NanoBEIR datasets are stored in sentence-transformers/NanoBEIR-en with
+    configs 'corpus', 'queries', 'qrels'. Each config contains splits named
+    after the dataset (NanoNFCorpus, NanoSciFact, etc.).
+
+    Structure:
+    - load_dataset("...", "corpus")["NanoNFCorpus"] -> corpus docs
+    - load_dataset("...", "queries")["NanoNFCorpus"] -> queries
+    - load_dataset("...", "qrels")["NanoNFCorpus"] -> relevance judgments
 
     Args:
         name: NanoBEIR dataset name (e.g., "nano-nfcorpus", "nano-scifact").
@@ -71,19 +84,24 @@ def load_nanobeir_dataset(
             f"Available: {', '.join(NANOBEIR_DATASETS.keys())}"
         )
 
-    hf_name = NANOBEIR_DATASETS[name]
-    logger.info("Loading NanoBEIR dataset %s from %s", name, hf_name)
+    split_name = NANOBEIR_DATASETS[name]
+    logger.info("Loading NanoBEIR dataset %s (split: %s)", name, split_name)
 
-    ds = hf_load_dataset(hf_name)
+    # Load corpus, queries, and qrels from separate configs
+    # Each config is a DatasetDict with splits named after each dataset
+    corpus_ds = hf_load_dataset(NANOBEIR_HF_DATASET, "corpus")
+    queries_ds = hf_load_dataset(NANOBEIR_HF_DATASET, "queries")
+    qrels_ds = hf_load_dataset(NANOBEIR_HF_DATASET, "qrels")
 
-    # Convert corpus to our format
-    corpus = _convert_corpus(ds["corpus"], max_corpus)
-
-    # Convert queries to our format
-    queries = _convert_queries(ds["queries"], max_queries)
+    # Get the specific dataset split
+    # Corpus has columns: _id, text (no title)
+    # Queries has columns: _id, text
+    # Qrels has columns: query-id, corpus-id, score
+    corpus = _convert_corpus(corpus_ds[split_name], max_corpus)
+    queries = _convert_queries(queries_ds[split_name], max_queries)
 
     # Load qrels and add to queries
-    qrels = _load_qrels(ds.get("qrels"))
+    qrels = _load_qrels(qrels_ds.get(split_name))
     _add_relevance_to_queries(queries, qrels)
 
     logger.info(
@@ -100,13 +118,17 @@ def _convert_corpus(
     hf_corpus: Any,
     max_items: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Convert NanoBEIR corpus to our format."""
+    """Convert NanoBEIR corpus to our format.
+
+    NanoBEIR corpus has columns: id, title, text
+    """
     corpus = []
     for i, doc in enumerate(hf_corpus):
         if max_items is not None and i >= max_items:
             break
 
-        doc_id = doc.get("_id", str(i))
+        # NanoBEIR uses 'id' not '_id'
+        doc_id = doc.get("id", doc.get("_id", str(i)))
         title = (doc.get("title", "") or "").strip()
         text = doc.get("text", "")
 
@@ -126,13 +148,17 @@ def _convert_queries(
     hf_queries: Any,
     max_items: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Convert NanoBEIR queries to our format."""
+    """Convert NanoBEIR queries to our format.
+
+    NanoBEIR queries has columns: id, text
+    """
     queries = []
     for i, q in enumerate(hf_queries):
         if max_items is not None and i >= max_items:
             break
 
-        query_id = q.get("_id", str(i))
+        # NanoBEIR uses 'id' not '_id'
+        query_id = q.get("id", q.get("_id", str(i)))
         text = q.get("text", "")
 
         queries.append({

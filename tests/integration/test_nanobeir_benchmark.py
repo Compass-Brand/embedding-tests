@@ -114,7 +114,8 @@ class TestNanoBEIRBenchmark:
     @patch("embedding_tests.config.nanobeir_datasets.hf_load_dataset")
     def test_load_nanobeir_dataset_structure(self, mock_hf_load) -> None:
         """Verify NanoBEIR dataset loading produces correct structure."""
-        # Mock HuggingFace response
+        # NanoBEIR structure: separate configs (corpus, queries, qrels)
+        # Each config returns a DatasetDict with splits named after datasets
         mock_corpus = MagicMock()
         mock_corpus.__iter__ = lambda self: iter([
             {"_id": "doc1", "title": "Title", "text": "Content 1"},
@@ -133,11 +134,12 @@ class TestNanoBEIRBenchmark:
             {"query-id": "q1", "corpus-id": "doc1", "score": 1},
         ])
 
-        mock_hf_load.return_value = {
-            "corpus": mock_corpus,
-            "queries": mock_queries,
-            "qrels": mock_qrels,
-        }
+        # Each config call returns a DatasetDict with NanoNFCorpus split
+        mock_hf_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},   # corpus config
+            {"NanoNFCorpus": mock_queries},  # queries config
+            {"NanoNFCorpus": mock_qrels},    # qrels config
+        ]
 
         corpus, queries = load_dataset("nano-nfcorpus")
 

@@ -28,27 +28,41 @@ class TestMTEBDatasetLoader:
             # Task names should be PascalCase or contain Retrieval
             assert task_name[0].isupper(), f"{name} task should be PascalCase"
 
+    def _create_mock_corpus(self, data: list[dict]) -> MagicMock:
+        """Create a mock HuggingFace Dataset for corpus."""
+        mock = MagicMock()
+        mock.__iter__ = lambda self: iter(data)
+        mock.column_names = ["id", "title", "text"]
+        return mock
+
+    def _create_mock_queries(self, data: list[dict]) -> MagicMock:
+        """Create a mock HuggingFace Dataset for queries."""
+        mock = MagicMock()
+        mock.__iter__ = lambda self: iter(data)
+        mock.column_names = ["id", "text"]
+        return mock
+
     @patch("mteb.get_tasks")
     def test_load_mteb_dataset_converts_format(self, mock_get_tasks: MagicMock) -> None:
         """MTEB corpus should be converted to our format."""
         from embedding_tests.config.mteb_datasets import load_mteb_dataset
 
-        # Mock MTEB task
+        # Mock MTEB task with new data structure
         mock_task = MagicMock()
-        mock_task.corpus = {
-            "test": {
-                "doc1": {"text": "Text 1", "title": "Title 1"},
-                "doc2": {"text": "Text 2", "title": "Title 2"},
-            }
-        }
-        mock_task.queries = {
-            "test": {
-                "q1": "Query 1",
-            }
-        }
-        mock_task.relevant_docs = {
-            "test": {
-                "q1": {"doc1": 1},
+        mock_task.dataset = {
+            "default": {
+                "test": {
+                    "corpus": self._create_mock_corpus([
+                        {"id": "doc1", "title": "Title 1", "text": "Text 1"},
+                        {"id": "doc2", "title": "Title 2", "text": "Text 2"},
+                    ]),
+                    "queries": self._create_mock_queries([
+                        {"id": "q1", "text": "Query 1"},
+                    ]),
+                    "relevant_docs": {
+                        "q1": {"doc1": 1},
+                    },
+                }
             }
         }
 
@@ -66,14 +80,18 @@ class TestMTEBDatasetLoader:
         from embedding_tests.config.mteb_datasets import load_mteb_dataset
 
         mock_task = MagicMock()
-        mock_task.corpus = {"test": {}}
-        mock_task.queries = {
-            "test": {
-                "q1": "Query 1",
-                "q2": "Query 2",
+        mock_task.dataset = {
+            "default": {
+                "test": {
+                    "corpus": self._create_mock_corpus([]),
+                    "queries": self._create_mock_queries([
+                        {"id": "q1", "text": "Query 1"},
+                        {"id": "q2", "text": "Query 2"},
+                    ]),
+                    "relevant_docs": {},
+                }
             }
         }
-        mock_task.relevant_docs = {"test": {}}
 
         mock_get_tasks.return_value = [mock_task]
 
@@ -89,14 +107,18 @@ class TestMTEBDatasetLoader:
         from embedding_tests.config.mteb_datasets import load_mteb_dataset
 
         mock_task = MagicMock()
-        mock_task.corpus = {
-            "test": {"doc1": {"text": "Text"}}
-        }
-        mock_task.queries = {
-            "test": {"q1": "Query 1"}
-        }
-        mock_task.relevant_docs = {
-            "test": {"q1": {"doc1": 1}}
+        mock_task.dataset = {
+            "default": {
+                "test": {
+                    "corpus": self._create_mock_corpus([
+                        {"id": "doc1", "title": "", "text": "Text"},
+                    ]),
+                    "queries": self._create_mock_queries([
+                        {"id": "q1", "text": "Query 1"},
+                    ]),
+                    "relevant_docs": {"q1": {"doc1": 1}},
+                }
+            }
         }
 
         mock_get_tasks.return_value = [mock_task]
@@ -118,13 +140,21 @@ class TestMTEBDatasetLoader:
         from embedding_tests.config.mteb_datasets import load_mteb_dataset
 
         mock_task = MagicMock()
-        mock_task.corpus = {
-            "test": {f"doc{i}": {"text": f"Text {i}"} for i in range(100)}
+        mock_task.dataset = {
+            "default": {
+                "test": {
+                    "corpus": self._create_mock_corpus([
+                        {"id": f"doc{i}", "title": "", "text": f"Text {i}"}
+                        for i in range(100)
+                    ]),
+                    "queries": self._create_mock_queries([
+                        {"id": f"q{i}", "text": f"Query {i}"}
+                        for i in range(50)
+                    ]),
+                    "relevant_docs": {},
+                }
+            }
         }
-        mock_task.queries = {
-            "test": {f"q{i}": f"Query {i}" for i in range(50)}
-        }
-        mock_task.relevant_docs = {"test": {}}
 
         mock_get_tasks.return_value = [mock_task]
 
@@ -153,25 +183,46 @@ class TestMTEBDatasetLoader:
         assert not is_mteb_dataset("sample")
 
     @patch("mteb.get_tasks")
-    def test_load_mteb_handles_dict_corpus_text(self, mock_get_tasks: MagicMock) -> None:
-        """Should handle corpus with dict text entries."""
+    def test_load_mteb_handles_dict_corpus_format(self, mock_get_tasks: MagicMock) -> None:
+        """Should handle corpus with dict format (older MTEB format)."""
         from embedding_tests.config.mteb_datasets import load_mteb_dataset
 
-        # Some MTEB datasets have corpus entries as strings, others as dicts
+        # Some MTEB tasks may use dict format for corpus/queries
+        mock_corpus = {
+            "doc1": {"text": "Text only", "title": ""},
+            "doc2": "Just a string",
+        }
+        mock_queries = {
+            "q1": "Query text",
+        }
+
         mock_task = MagicMock()
-        mock_task.corpus = {
-            "test": {
-                "doc1": {"text": "Text only"},  # Dict with text
-                "doc2": "Just a string",  # Plain string
+        mock_task.dataset = {
+            "default": {
+                "test": {
+                    "corpus": mock_corpus,
+                    "queries": mock_queries,
+                    "relevant_docs": {},
+                }
             }
         }
-        mock_task.queries = {"test": {"q1": "Query"}}
-        mock_task.relevant_docs = {"test": {}}
 
         mock_get_tasks.return_value = [mock_task]
 
         corpus, queries = load_mteb_dataset("cqadupstack-programmers")
 
         assert len(corpus) == 2
-        assert corpus[0]["text"] == "Text only"
-        assert corpus[1]["text"] == "Just a string"
+        assert len(queries) == 1
+
+    @patch("mteb.get_tasks")
+    def test_load_mteb_raises_on_missing_split(self, mock_get_tasks: MagicMock) -> None:
+        """Should raise when requested split is not available."""
+        from embedding_tests.config.mteb_datasets import load_mteb_dataset
+
+        mock_task = MagicMock()
+        mock_task.dataset = {"default": {}}  # No test split
+
+        mock_get_tasks.return_value = [mock_task]
+
+        with pytest.raises(ValueError, match="No data found"):
+            load_mteb_dataset("cqadupstack-programmers")

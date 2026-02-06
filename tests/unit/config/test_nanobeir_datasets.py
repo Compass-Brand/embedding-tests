@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -24,75 +24,81 @@ class TestNanoBEIRDatasetLoader:
         }
         assert set(NANOBEIR_DATASETS.keys()) == expected
 
-    def test_nanobeir_dataset_has_hf_name(self) -> None:
-        """Each NanoBEIR dataset should have HuggingFace name."""
+    def test_nanobeir_dataset_has_split_name(self) -> None:
+        """Each NanoBEIR dataset should map to a split name."""
         from embedding_tests.config.nanobeir_datasets import NANOBEIR_DATASETS
 
-        for name, hf_name in NANOBEIR_DATASETS.items():
-            assert hf_name.startswith("sentence-transformers/Nano"), \
-                f"{name} should have sentence-transformers HF name"
+        for name, split_name in NANOBEIR_DATASETS.items():
+            # Split names are like "NanoNFCorpus", "NanoSciFact", etc.
+            assert split_name.startswith("Nano"), \
+                f"{name} should have Nano* split name, got {split_name}"
+
+    def test_nanobeir_hf_dataset_constant(self) -> None:
+        """Should use the unified NanoBEIR-en dataset."""
+        from embedding_tests.config.nanobeir_datasets import NANOBEIR_HF_DATASET
+
+        assert NANOBEIR_HF_DATASET == "sentence-transformers/NanoBEIR-en"
+
+    def _create_mock_dataset(self, data: list[dict]) -> MagicMock:
+        """Create a mock HuggingFace Dataset."""
+        mock = MagicMock()
+        mock.__iter__ = lambda self: iter(data)
+        mock.__len__ = lambda self: len(data)
+        return mock
 
     @patch("embedding_tests.config.nanobeir_datasets.hf_load_dataset")
     def test_load_nanobeir_corpus_converts_format(self, mock_load: MagicMock) -> None:
         """NanoBEIR corpus should be converted to our format."""
         from embedding_tests.config.nanobeir_datasets import load_nanobeir_dataset
 
-        # NanoBEIR format: corpus has _id, title, text; queries has _id, text
-        mock_corpus = MagicMock()
-        mock_corpus.__iter__ = lambda self: iter([
-            {"_id": "doc1", "title": "Title 1", "text": "Text 1"},
-            {"_id": "doc2", "title": "Title 2", "text": "Text 2"},
+        # NanoBEIR structure: corpus has _id, text; queries has _id, text
+        mock_corpus = self._create_mock_dataset([
+            {"_id": "doc1", "text": "Text 1"},
+            {"_id": "doc2", "text": "Text 2"},
         ])
-        mock_corpus.__len__ = lambda self: 2
-
-        mock_queries = MagicMock()
-        mock_queries.__iter__ = lambda self: iter([
+        mock_queries = self._create_mock_dataset([
             {"_id": "q1", "text": "Query 1"},
         ])
-        mock_queries.__len__ = lambda self: 1
-
-        mock_qrels = MagicMock()
-        mock_qrels.__iter__ = lambda self: iter([
+        mock_qrels = self._create_mock_dataset([
             {"query-id": "q1", "corpus-id": "doc1", "score": 1},
         ])
 
-        mock_load.return_value = {
-            "corpus": mock_corpus,
-            "queries": mock_queries,
-            "qrels": mock_qrels,
-        }
+        # Each config call returns a DatasetDict with splits
+        mock_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},  # corpus config
+            {"NanoNFCorpus": mock_queries},  # queries config
+            {"NanoNFCorpus": mock_qrels},   # qrels config
+        ]
 
         corpus, queries = load_nanobeir_dataset("nano-nfcorpus")
 
+        # Verify hf_load_dataset was called for each config
+        assert mock_load.call_count == 3
+        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "corpus")
+        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "queries")
+        mock_load.assert_any_call("sentence-transformers/NanoBEIR-en", "qrels")
+
         assert len(corpus) == 2
         assert corpus[0]["doc_id"] == "doc1"
-        assert "Title 1" in corpus[0]["text"]
-        assert "Text 1" in corpus[0]["text"]
+        assert corpus[0]["text"] == "Text 1"
 
     @patch("embedding_tests.config.nanobeir_datasets.hf_load_dataset")
     def test_load_nanobeir_queries_converts_format(self, mock_load: MagicMock) -> None:
         """NanoBEIR queries should be converted to our format."""
         from embedding_tests.config.nanobeir_datasets import load_nanobeir_dataset
 
-        mock_corpus = MagicMock()
-        mock_corpus.__iter__ = lambda self: iter([])
-        mock_corpus.__len__ = lambda self: 0
-
-        mock_queries = MagicMock()
-        mock_queries.__iter__ = lambda self: iter([
+        mock_corpus = self._create_mock_dataset([])
+        mock_queries = self._create_mock_dataset([
             {"_id": "q1", "text": "Query 1"},
             {"_id": "q2", "text": "Query 2"},
         ])
-        mock_queries.__len__ = lambda self: 2
+        mock_qrels = self._create_mock_dataset([])
 
-        mock_qrels = MagicMock()
-        mock_qrels.__iter__ = lambda self: iter([])
-
-        mock_load.return_value = {
-            "corpus": mock_corpus,
-            "queries": mock_queries,
-            "qrels": mock_qrels,
-        }
+        mock_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},
+            {"NanoNFCorpus": mock_queries},
+            {"NanoNFCorpus": mock_qrels},
+        ]
 
         corpus, queries = load_nanobeir_dataset("nano-nfcorpus")
 
@@ -105,28 +111,21 @@ class TestNanoBEIRDatasetLoader:
         """NanoBEIR queries should include relevant_doc_ids."""
         from embedding_tests.config.nanobeir_datasets import load_nanobeir_dataset
 
-        mock_corpus = MagicMock()
-        mock_corpus.__iter__ = lambda self: iter([
-            {"_id": "doc1", "title": "", "text": "Text"},
+        mock_corpus = self._create_mock_dataset([
+            {"_id": "doc1", "text": "Text"},
         ])
-        mock_corpus.__len__ = lambda self: 1
-
-        mock_queries = MagicMock()
-        mock_queries.__iter__ = lambda self: iter([
+        mock_queries = self._create_mock_dataset([
             {"_id": "q1", "text": "Query 1"},
         ])
-        mock_queries.__len__ = lambda self: 1
-
-        mock_qrels = MagicMock()
-        mock_qrels.__iter__ = lambda self: iter([
+        mock_qrels = self._create_mock_dataset([
             {"query-id": "q1", "corpus-id": "doc1", "score": 1},
         ])
 
-        mock_load.return_value = {
-            "corpus": mock_corpus,
-            "queries": mock_queries,
-            "qrels": mock_qrels,
-        }
+        mock_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},
+            {"NanoNFCorpus": mock_queries},
+            {"NanoNFCorpus": mock_qrels},
+        ]
 
         corpus, queries = load_nanobeir_dataset("nano-nfcorpus")
 
@@ -144,28 +143,21 @@ class TestNanoBEIRDatasetLoader:
         """Should support limiting corpus and query count."""
         from embedding_tests.config.nanobeir_datasets import load_nanobeir_dataset
 
-        mock_corpus = MagicMock()
-        mock_corpus.__iter__ = lambda self: iter([
-            {"_id": f"doc{i}", "title": "", "text": f"Text {i}"}
+        mock_corpus = self._create_mock_dataset([
+            {"_id": f"doc{i}", "text": f"Text {i}"}
             for i in range(100)
         ])
-        mock_corpus.__len__ = lambda self: 100
-
-        mock_queries = MagicMock()
-        mock_queries.__iter__ = lambda self: iter([
+        mock_queries = self._create_mock_dataset([
             {"_id": f"q{i}", "text": f"Query {i}"}
             for i in range(50)
         ])
-        mock_queries.__len__ = lambda self: 50
+        mock_qrels = self._create_mock_dataset([])
 
-        mock_qrels = MagicMock()
-        mock_qrels.__iter__ = lambda self: iter([])
-
-        mock_load.return_value = {
-            "corpus": mock_corpus,
-            "queries": mock_queries,
-            "qrels": mock_qrels,
-        }
+        mock_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},
+            {"NanoNFCorpus": mock_queries},
+            {"NanoNFCorpus": mock_qrels},
+        ]
 
         corpus, queries = load_nanobeir_dataset(
             "nano-nfcorpus", max_corpus=10, max_queries=5
@@ -175,34 +167,27 @@ class TestNanoBEIRDatasetLoader:
         assert len(queries) == 5
 
     @patch("embedding_tests.config.nanobeir_datasets.hf_load_dataset")
-    def test_load_nanobeir_handles_empty_title(self, mock_load: MagicMock) -> None:
-        """Empty title should not produce spurious newlines in text."""
+    def test_load_nanobeir_handles_title_in_corpus(self, mock_load: MagicMock) -> None:
+        """Should handle corpus with optional title field."""
         from embedding_tests.config.nanobeir_datasets import load_nanobeir_dataset
 
-        mock_corpus = MagicMock()
-        mock_corpus.__iter__ = lambda self: iter([
-            {"_id": "doc1", "title": "", "text": "Just text"},
-            {"_id": "doc2", "title": "  ", "text": "More text"},
+        mock_corpus = self._create_mock_dataset([
+            {"_id": "doc1", "title": "Title 1", "text": "Text 1"},
+            {"_id": "doc2", "text": "Just text"},  # No title
         ])
-        mock_corpus.__len__ = lambda self: 2
+        mock_queries = self._create_mock_dataset([{"_id": "q1", "text": "Query"}])
+        mock_qrels = self._create_mock_dataset([])
 
-        mock_queries = MagicMock()
-        mock_queries.__iter__ = lambda self: iter([{"_id": "q1", "text": "Query"}])
-        mock_queries.__len__ = lambda self: 1
-
-        mock_qrels = MagicMock()
-        mock_qrels.__iter__ = lambda self: iter([])
-
-        mock_load.return_value = {
-            "corpus": mock_corpus,
-            "queries": mock_queries,
-            "qrels": mock_qrels,
-        }
+        mock_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},
+            {"NanoNFCorpus": mock_queries},
+            {"NanoNFCorpus": mock_qrels},
+        ]
 
         corpus, queries = load_nanobeir_dataset("nano-nfcorpus")
 
-        assert corpus[0]["text"] == "Just text"
-        assert corpus[1]["text"] == "More text"
+        assert "Title 1" in corpus[0]["text"]
+        assert corpus[1]["text"] == "Just text"
 
     def test_list_nanobeir_datasets_function(self) -> None:
         """Should have a function to list datasets with info."""
@@ -220,3 +205,27 @@ class TestNanoBEIRDatasetLoader:
         assert is_nanobeir_dataset("nano-scifact")
         assert not is_nanobeir_dataset("nfcorpus")
         assert not is_nanobeir_dataset("sample")
+
+    @patch("embedding_tests.config.nanobeir_datasets.hf_load_dataset")
+    def test_load_nanobeir_handles_id_format(self, mock_load: MagicMock) -> None:
+        """Should handle datasets with id instead of _id."""
+        from embedding_tests.config.nanobeir_datasets import load_nanobeir_dataset
+
+        mock_corpus = self._create_mock_dataset([
+            {"id": "doc1", "text": "Text"},
+        ])
+        mock_queries = self._create_mock_dataset([
+            {"id": "q1", "text": "Query 1"},
+        ])
+        mock_qrels = self._create_mock_dataset([])
+
+        mock_load.side_effect = [
+            {"NanoNFCorpus": mock_corpus},
+            {"NanoNFCorpus": mock_queries},
+            {"NanoNFCorpus": mock_qrels},
+        ]
+
+        corpus, queries = load_nanobeir_dataset("nano-nfcorpus")
+
+        assert corpus[0]["doc_id"] == "doc1"
+        assert queries[0]["query_id"] == "q1"

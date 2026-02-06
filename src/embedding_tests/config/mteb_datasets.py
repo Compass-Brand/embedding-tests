@@ -89,14 +89,22 @@ def load_mteb_dataset(
     task = tasks[0]
     task.load_data(eval_splits=[split])
 
+    # MTEB data structure: task.dataset['default'][split] contains:
+    # - 'corpus': Dataset with 'id', 'title', 'text' columns
+    # - 'queries': Dataset with 'id', 'text' columns
+    # - 'relevant_docs': Dict mapping query_id -> {doc_id: score}
+    data = task.dataset.get("default", {}).get(split, {})
+    if not data:
+        raise ValueError(f"No data found for task {task_name} split {split}")
+
     # Convert corpus to our format
-    corpus = _convert_corpus(task.corpus.get(split, {}), max_corpus)
+    corpus = _convert_corpus(data.get("corpus", {}), max_corpus)
 
     # Convert queries to our format
-    queries = _convert_queries(task.queries.get(split, {}), max_queries)
+    queries = _convert_queries(data.get("queries", {}), max_queries)
 
     # Load qrels and add to queries
-    qrels = task.relevant_docs.get(split, {})
+    qrels = data.get("relevant_docs", {})
     _add_relevance_to_queries(queries, qrels)
 
     logger.info(
@@ -110,56 +118,96 @@ def load_mteb_dataset(
 
 
 def _convert_corpus(
-    mteb_corpus: dict[str, Any],
+    mteb_corpus: Any,
     max_items: int | None = None,
 ) -> list[dict[str, Any]]:
     """Convert MTEB corpus to our format.
 
-    MTEB corpus is a dict mapping doc_id -> doc_info where doc_info
-    can be a dict with 'text' and 'title' or just a string.
+    MTEB corpus can be:
+    1. A HuggingFace Dataset with 'id', 'title', 'text' columns
+    2. A dict mapping doc_id -> doc_info (older format)
     """
     corpus = []
-    for i, (doc_id, doc_info) in enumerate(mteb_corpus.items()):
-        if max_items is not None and i >= max_items:
-            break
 
-        # Handle both dict and string corpus entries
-        if isinstance(doc_info, dict):
-            text = doc_info.get("text", "")
-            title = (doc_info.get("title", "") or "").strip()
-            # Combine title and text only if title is non-empty
+    # Check if it's a HuggingFace Dataset (has __iter__ and column names)
+    if hasattr(mteb_corpus, "__iter__") and hasattr(mteb_corpus, "column_names"):
+        # It's a Dataset - iterate over rows
+        for i, doc in enumerate(mteb_corpus):
+            if max_items is not None and i >= max_items:
+                break
+
+            doc_id = doc.get("id", doc.get("_id", str(i)))
+            title = (doc.get("title", "") or "").strip()
+            text = doc.get("text", "")
+
             full_text = f"{title}\n\n{text}".strip() if title else text
-        else:
-            full_text = str(doc_info)
-            title = ""
 
-        corpus.append({
-            "doc_id": doc_id,
-            "text": full_text,
-            "title": title,
-        })
+            corpus.append({
+                "doc_id": doc_id,
+                "text": full_text,
+                "title": title,
+            })
+    elif isinstance(mteb_corpus, dict):
+        # Dict format: doc_id -> doc_info
+        for i, (doc_id, doc_info) in enumerate(mteb_corpus.items()):
+            if max_items is not None and i >= max_items:
+                break
+
+            if isinstance(doc_info, dict):
+                text = doc_info.get("text", "")
+                title = (doc_info.get("title", "") or "").strip()
+                full_text = f"{title}\n\n{text}".strip() if title else text
+            else:
+                full_text = str(doc_info)
+                title = ""
+
+            corpus.append({
+                "doc_id": doc_id,
+                "text": full_text,
+                "title": title,
+            })
 
     return corpus
 
 
 def _convert_queries(
-    mteb_queries: dict[str, str],
+    mteb_queries: Any,
     max_items: int | None = None,
 ) -> list[dict[str, Any]]:
     """Convert MTEB queries to our format.
 
-    MTEB queries is a dict mapping query_id -> query_text.
+    MTEB queries can be:
+    1. A HuggingFace Dataset with 'id', 'text' columns
+    2. A dict mapping query_id -> query_text (older format)
     """
     queries = []
-    for i, (query_id, query_text) in enumerate(mteb_queries.items()):
-        if max_items is not None and i >= max_items:
-            break
 
-        queries.append({
-            "query_id": query_id,
-            "text": query_text,
-            "relevant_doc_ids": [],
-        })
+    # Check if it's a HuggingFace Dataset
+    if hasattr(mteb_queries, "__iter__") and hasattr(mteb_queries, "column_names"):
+        # It's a Dataset - iterate over rows
+        for i, q in enumerate(mteb_queries):
+            if max_items is not None and i >= max_items:
+                break
+
+            query_id = q.get("id", q.get("_id", str(i)))
+            text = q.get("text", "")
+
+            queries.append({
+                "query_id": query_id,
+                "text": text,
+                "relevant_doc_ids": [],
+            })
+    elif isinstance(mteb_queries, dict):
+        # Dict format: query_id -> query_text
+        for i, (query_id, query_text) in enumerate(mteb_queries.items()):
+            if max_items is not None and i >= max_items:
+                break
+
+            queries.append({
+                "query_id": query_id,
+                "text": query_text,
+                "relevant_doc_ids": [],
+            })
 
     return queries
 

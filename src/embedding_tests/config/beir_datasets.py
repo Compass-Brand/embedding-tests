@@ -1,6 +1,7 @@
 """BEIR benchmark dataset loader.
 
 Downloads and converts BEIR datasets from HuggingFace to our format.
+Uses MTEB's HuggingFace datasets (mteb/*) which include properly structured qrels.
 See: https://github.com/beir-cellar/beir
 """
 
@@ -11,7 +12,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Available BEIR datasets with HuggingFace names and metadata
+
 def is_beir_dataset(name: str) -> bool:
     """Check if a dataset name is a BEIR dataset."""
     return name in BEIR_DATASETS
@@ -29,54 +30,62 @@ def list_beir_datasets() -> list[dict[str, Any]]:
     ]
 
 
+# Available BEIR datasets - using MTEB's HuggingFace datasets which have qrels
+# Format: mteb/{dataset_name} with 'default' config
 BEIR_DATASETS: dict[str, dict[str, Any]] = {
     "nfcorpus": {
-        "hf_name": "BeIR/nfcorpus",
+        "hf_name": "mteb/nfcorpus",
         "description": "Medical/nutrition information retrieval (3.6K docs, 323 queries)",
         "corpus_size": 3633,
         "query_count": 323,
     },
     "scifact": {
-        "hf_name": "BeIR/scifact",
+        "hf_name": "mteb/scifact",
         "description": "Scientific fact verification (5K docs, 300 queries)",
         "corpus_size": 5183,
         "query_count": 300,
     },
     "fiqa": {
-        "hf_name": "BeIR/fiqa",
+        "hf_name": "mteb/fiqa",
         "description": "Financial question answering (57K docs, 648 queries)",
         "corpus_size": 57638,
         "query_count": 648,
     },
     "hotpotqa": {
-        "hf_name": "BeIR/hotpotqa",
+        "hf_name": "mteb/hotpotqa",
         "description": "Multi-hop question answering (5.2M docs, 7.4K queries)",
         "corpus_size": 5233329,
         "query_count": 7405,
     },
     "nq": {
-        "hf_name": "BeIR/nq",
+        "hf_name": "mteb/nq",
         "description": "Natural Questions - Wikipedia passages (2.6M docs, 3.4K queries)",
         "corpus_size": 2681468,
         "query_count": 3452,
     },
     "msmarco": {
-        "hf_name": "BeIR/msmarco",
+        "hf_name": "mteb/msmarco",
         "description": "MS MARCO passage ranking (8.8M docs, 6.9K queries)",
         "corpus_size": 8841823,
         "query_count": 6980,
     },
     "trec-covid": {
-        "hf_name": "BeIR/trec-covid",
+        "hf_name": "mteb/trec-covid",
         "description": "COVID-19 scientific literature (171K docs, 50 queries)",
         "corpus_size": 171332,
         "query_count": 50,
     },
     "arguana": {
-        "hf_name": "BeIR/arguana",
+        "hf_name": "mteb/arguana",
         "description": "Argument retrieval (8.6K docs, 1.4K queries)",
         "corpus_size": 8674,
         "query_count": 1406,
+    },
+    "scidocs": {
+        "hf_name": "mteb/scidocs",
+        "description": "Scientific document retrieval (25K docs, 1K queries)",
+        "corpus_size": 25657,
+        "query_count": 1000,
     },
 }
 
@@ -90,9 +99,17 @@ def load_beir_dataset(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load a BEIR dataset from HuggingFace and convert to our format.
 
+    Uses MTEB's HuggingFace datasets (mteb/*) which store data with
+    separate configs for 'corpus', 'queries', and 'default' (qrels).
+
+    Structure:
+    - load_dataset("mteb/nfcorpus", "corpus")["train"] -> corpus docs
+    - load_dataset("mteb/nfcorpus", "queries")["queries"] -> queries
+    - load_dataset("mteb/nfcorpus", "default")[split] -> qrels
+
     Args:
         name: BEIR dataset name (e.g., "nfcorpus", "scifact").
-        split: Dataset split to use (default: "test").
+        split: Dataset split for qrels (default: "test").
         max_corpus: Maximum number of corpus documents to load (for testing).
         max_queries: Maximum number of queries to load (for testing).
 
@@ -115,18 +132,27 @@ def load_beir_dataset(
 
     logger.info("Loading BEIR dataset %s from %s", name, hf_name)
 
-    # Load corpus and queries from HuggingFace
-    # BEIR datasets have 'corpus' and 'queries' configs
-    ds = load_dataset(hf_name)
+    # Load corpus - usually has 'train' split containing all docs
+    corpus_ds = load_dataset(hf_name, "corpus")
+    corpus_split = corpus_ds.get("train", corpus_ds.get(list(corpus_ds.keys())[0]))
 
-    # Convert corpus to our format
-    corpus = _convert_corpus(ds["corpus"], max_corpus)
+    # Load queries - usually has 'queries' split
+    queries_ds = load_dataset(hf_name, "queries")
+    queries_split = queries_ds.get("queries", queries_ds.get(list(queries_ds.keys())[0]))
 
-    # Convert queries to our format
-    queries = _convert_queries(ds["queries"], max_queries)
+    # Load qrels (default config has train/dev/test splits)
+    qrels_ds = load_dataset(hf_name, "default")
+    qrels_split = qrels_ds.get(split)
+    if qrels_split is None:
+        available_splits = list(qrels_ds.keys())
+        raise ValueError(f"Split '{split}' not found. Available: {available_splits}")
 
-    # Load relevance judgments and add to queries
-    qrels = _load_qrels(hf_name, split)
+    # Convert corpus and queries to our format
+    corpus = _convert_corpus(corpus_split, max_corpus)
+    queries = _convert_queries(queries_split, max_queries)
+
+    # Build qrels dict from qrels split (columns: query-id, corpus-id, score)
+    qrels = _build_qrels_from_dataset(qrels_split)
     _add_relevance_to_queries(queries, qrels)
 
     logger.info(
@@ -143,14 +169,21 @@ def _convert_corpus(
     hf_corpus: Any,
     max_items: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Convert HuggingFace BEIR corpus to our format."""
+    """Convert MTEB BEIR corpus to our format.
+
+    MTEB corpus can be:
+    1. A HuggingFace Dataset with 'id', 'title', 'text' columns
+    2. A list/iterable of dicts
+    """
     corpus = []
+
+    # Handle HuggingFace Dataset or list
     for i, doc in enumerate(hf_corpus):
         if max_items is not None and i >= max_items:
             break
 
-        # BEIR format: _id, title, text
-        doc_id = doc.get("_id", str(i))
+        # MTEB uses 'id', older BEIR uses '_id'
+        doc_id = doc.get("id", doc.get("_id", str(i)))
         title = (doc.get("title", "") or "").strip()
         text = doc.get("text", "")
 
@@ -160,7 +193,7 @@ def _convert_corpus(
         corpus.append({
             "doc_id": doc_id,
             "text": full_text,
-            "title": title,  # Keep original title for reference
+            "title": title,
         })
 
     return corpus
@@ -170,55 +203,55 @@ def _convert_queries(
     hf_queries: Any,
     max_items: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Convert HuggingFace BEIR queries to our format."""
+    """Convert MTEB BEIR queries to our format.
+
+    MTEB queries can be:
+    1. A HuggingFace Dataset with 'id', 'text' columns
+    2. A list/iterable of dicts
+    """
     queries = []
+
     for i, q in enumerate(hf_queries):
         if max_items is not None and i >= max_items:
             break
 
-        query_id = q.get("_id", str(i))
+        # MTEB uses 'id', older BEIR uses '_id'
+        query_id = q.get("id", q.get("_id", str(i)))
         text = q.get("text", "")
 
         queries.append({
             "query_id": query_id,
             "text": text,
-            "relevant_doc_ids": [],  # Will be filled from qrels
+            "relevant_doc_ids": [],
         })
 
     return queries
 
 
-def _load_qrels(hf_name: str, split: str) -> dict[str, dict[str, int]]:
-    """Load relevance judgments (qrels) for a BEIR dataset.
+def _build_qrels_from_dataset(qrels_ds: Any) -> dict[str, dict[str, int]]:
+    """Build qrels dict from MTEB qrels dataset.
+
+    MTEB qrels datasets have columns: query-id, corpus-id, score
 
     Returns:
         Dict mapping query_id -> {doc_id: relevance_score}
     """
-    from datasets import load_dataset
+    if qrels_ds is None:
+        return {}
 
-    try:
-        # BEIR qrels are stored in a separate config
-        qrels_ds = load_dataset(hf_name, "qrels")
-        qrels_split = qrels_ds.get(split, qrels_ds.get("test", None))
+    qrels: dict[str, dict[str, int]] = {}
 
-        if qrels_split is None:
-            logger.warning("No qrels found for %s split %s", hf_name, split)
-            return {}
+    for row in qrels_ds:
+        qid = str(row.get("query-id", ""))
+        did = str(row.get("corpus-id", ""))
+        score = int(row.get("score", 1))
 
-        qrels: dict[str, dict[str, int]] = {}
-        for row in qrels_split:
-            qid = str(row.get("query-id", row.get("qid", "")))
-            did = str(row.get("corpus-id", row.get("docid", "")))
-            score = row.get("score", 1)
-
+        if qid and did:
             if qid not in qrels:
                 qrels[qid] = {}
             qrels[qid][did] = score
 
-        return qrels
-    except Exception as e:
-        logger.warning("Failed to load qrels for %s: %s", hf_name, e)
-        return {}
+    return qrels
 
 
 def _add_relevance_to_queries(
