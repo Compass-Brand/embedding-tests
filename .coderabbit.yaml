@@ -2,5 +2,4 @@
 
 # Inherit settings from compass-brand parent
 inheritance: true
-
-# Project-specific overrides for Embedding Tests
+# Project-specific overrides for Compass Engine
